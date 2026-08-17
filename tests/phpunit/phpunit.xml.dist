@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<phpunit
+	bootstrap="bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	beStrictAboutTestsThatDoNotTestAnything="true"
+	beStrictAboutOutputDuringTests="true"
+	beStrictAboutTodoAnnotatedTests="true"
+	convertDeprecationsToExceptions="true"
+	failOnWarning="true"
+	failOnRisky="true"
+	>
+	<testsuites>
+		<testsuite name="allterrain-media-explorer">
+			<directory suffix=".php">./tests/</directory>
+		</testsuite>
+	</testsuites>
+	<groups>
+		<include>
+			<group>allterrain-media-explorer</group>
+		</include>
+	</groups>
+</phpunit>

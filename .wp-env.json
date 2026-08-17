@@ -1,0 +1,12 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/wp-env.json",
+	"mappings": {
+		"wp-content/plugins/allterrain-media-explorer": "."
+	},
+	"port": 8894,
+	"testsPort": 8895,
+	"config": {
+		"WP_DEBUG": true,
+		"SCRIPT_DEBUG": true
+	}
+}

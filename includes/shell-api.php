@@ -1,0 +1,157 @@
+<?php
+/**
+ * Naming the shell.
+ *
+ * The desktop shell was called Desktop Mode and is now called OpenStation, and
+ * the rename went all the way down: `desktop_mode_register_window()` became
+ * `openstation_register_window()`, and every hook and constant with it.
+ * AllTerrain Media Explorer ships to sites running either version and cannot know which,
+ * so it asks for a capability by its bare name and this file resolves the
+ * spelling.
+ *
+ * Deliberately a lookup rather than a version check. A site mid-upgrade, a fork,
+ * or a shell that renames itself again all degrade to "no desktop integration"
+ * instead of a fatal error on every request -- which is the same promise the
+ * rest of this plugin makes to sites with no shell at all.
+ *
+ * @package AllTerrain_Media_Explorer
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Prefixes to try, current first.
+ *
+ * @since 0.1.0
+ */
+const ATME_SHELL_PREFIXES = array( 'openstation_', 'desktop_mode_' );
+
+/**
+ * Resolves a shell function to whichever name this install has.
+ *
+ * @since 0.1.0
+ *
+ * @param string $name Bare function name, e.g. `register_window`.
+ * @return string The callable name, or an empty string when no shell provides it.
+ */
+function atme_shell_function( $name ) {
+	$resolved = '';
+
+	foreach ( ATME_SHELL_PREFIXES as $prefix ) {
+		if ( function_exists( $prefix . $name ) ) {
+			$resolved = $prefix . $name;
+			break;
+		}
+	}
+
+	/**
+	 * Filters the shell function this plugin will call for a capability.
+	 *
+	 * Returning an empty string makes the plugin behave as though the shell
+	 * does not offer that capability at all, which is the supported way to turn
+	 * one integration off without deactivating anything -- a site that wants
+	 * the work tracker but not the wallpaper icon, say.
+	 *
+	 * It is also the only way to *test* the no-shell paths. Detection is
+	 * `function_exists()`, and PHP cannot undefine a function, so a suite whose
+	 * bootstrap stubs the shell can otherwise never reach the branches that run
+	 * when it is missing.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param string $resolved The callable name, or '' when no shell provides it.
+	 * @param string $name     The bare capability name, e.g. `register_window`.
+	 */
+	return (string) apply_filters( 'atme_shell_function', $resolved, $name );
+}
+
+/**
+ * Whether the shell offers a capability at all.
+ *
+ * @since 0.1.0
+ *
+ * @param string $name Bare function name.
+ * @return bool True when some spelling of it exists.
+ */
+function atme_shell_has( $name ) {
+	return '' !== atme_shell_function( $name );
+}
+
+/**
+ * Calls a shell function by its bare name.
+ *
+ * @since 0.1.0
+ *
+ * @param string $name    Bare function name.
+ * @param mixed  ...$args Arguments to pass through.
+ * @return mixed The return value, or null when no shell provides it.
+ */
+function atme_shell_call( $name, ...$args ) {
+	$fn = atme_shell_function( $name );
+
+	return $fn ? call_user_func_array( $fn, $args ) : null;
+}
+
+/**
+ * Every spelling of a shell hook.
+ *
+ * Returned as a list so callers can register against all of them. A listener for
+ * a hook that never fires costs nothing, and it is far cheaper than deciding at
+ * boot which shell is present -- the answer can change between `plugins_loaded`
+ * and the hook actually firing.
+ *
+ * @since 0.1.0
+ *
+ * @param string $name Bare hook name, e.g. `mode_init`.
+ * @return string[] Hook names.
+ */
+function atme_shell_hooks( $name ) {
+	$hooks = array();
+
+	foreach ( ATME_SHELL_PREFIXES as $prefix ) {
+		$hooks[] = $prefix . $name;
+	}
+
+	return $hooks;
+}
+
+/**
+ * Determines whether the shell is installed *and* switched on for this user.
+ *
+ * Two separate questions, and both matter. `atme_shell_has()` answers "is the
+ * plugin active"; `openstation_is_enabled()` answers "has this particular user
+ * opted in", since the shell is a per-user preference rather than a site-wide
+ * one. Only when both hold should AllTerrain Media Explorer present itself as a desktop
+ * app rather than as an admin page.
+ *
+ * @since 0.1.0
+ *
+ * @return bool True when the desktop shell is active for the current user.
+ */
+function atme_shell_is_active() {
+	if ( ! atme_shell_has( 'register_window' ) || ! atme_shell_has( 'is_enabled' ) ) {
+		return false;
+	}
+
+	return (bool) atme_shell_call( 'is_enabled' );
+}
+
+/**
+ * Whether the current request is an admin page rendering inside a shell window.
+ *
+ * Chromeless requests are admin pages loaded inside a window iframe with the
+ * admin bar and menu suppressed. The board is a *native* window, so it never
+ * takes this path itself -- but the standalone admin page does, when a user
+ * reaches it through the shell's own menu, and it drops its page heading there.
+ *
+ * @since 0.1.0
+ *
+ * @return bool True when rendering inside a shell window iframe.
+ */
+function atme_shell_is_chromeless() {
+	if ( ! atme_shell_has( 'is_chromeless_request' ) ) {
+		return false;
+	}
+
+	return (bool) atme_shell_call( 'is_chromeless_request' );
+}

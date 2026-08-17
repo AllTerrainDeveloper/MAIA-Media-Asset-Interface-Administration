@@ -1,0 +1,8 @@
+# Dependencies and build byproducts. The built bundles in assets/js are
+# committed on purpose, so the plugin installs straight from a clone.
+node_modules/
+dist/
+.DS_Store
+# Fetched PHP test toolchain (bin/fetch-php-tools.mjs) — never committed.
+bin/phpunit.phar
+bin/phpunit-polyfills/

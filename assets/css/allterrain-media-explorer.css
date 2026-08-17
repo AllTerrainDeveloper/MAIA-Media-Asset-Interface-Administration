@@ -1,0 +1,885 @@
+/**
+ * AllTerrain Media Explorer.
+ *
+ * Painted with the shell's design tokens (`--os-ui-*`, declared on
+ * `body.os-active`) so the window follows the active desktop theme without a
+ * line of theme code here. Every value has a fallback for the one host with
+ * no shell variables: the signpost admin page, which shows no explorer UI
+ * anyway.
+ *
+ * Logical properties throughout — the explorer must mirror correctly in RTL.
+ */
+
+.atme {
+	display: flex;
+	flex-direction: column;
+	block-size: 100%;
+	min-block-size: 0;
+	color: var( --os-ui-fg, #1e1e1e );
+	font-size: 13px;
+}
+
+/* `display: flex` would beat the `hidden` attribute's UA rule, so restate it. */
+.atme__loading[hidden],
+.atme__frame[hidden],
+.atme__inspector[hidden] {
+	display: none;
+}
+
+.atme__loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	block-size: 100%;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme__frame {
+	display: grid;
+	grid-template-columns: 180px minmax( 0, 1fr ) auto;
+	block-size: 100%;
+	min-block-size: 0;
+}
+
+.atme__frame.is-drop-ready {
+	outline: 2px dashed var( --os-ui-accent, #2271b1 );
+	outline-offset: -4px;
+}
+
+/* Sidebar ---------------------------------------------------------------- */
+
+.atme__sidebar {
+	overflow-y: auto;
+	padding: 8px;
+	border-inline-end: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+}
+
+.atme-side__group {
+	margin-block-end: 16px;
+}
+
+.atme-side__title {
+	padding: 4px 8px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-side__row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	inline-size: 100%;
+	padding: 5px 8px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.atme-side__row:hover {
+	background: var( --os-ui-hover, rgba( 128, 128, 128, 0.12 ) );
+}
+
+.atme-side__row.is-active {
+	background: var( --os-ui-holo-fill, var( --os-ui-accent, #2271b1 ) );
+	color: var( --os-ui-holo-ink, var( --os-ui-fg-on-accent, #fff ) );
+}
+
+.atme-side__row .dashicons {
+	font-size: 16px;
+	inline-size: 16px;
+	block-size: 16px;
+}
+
+.atme-side__label {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.atme-side__count {
+	font-size: 11px;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+/* Main column ------------------------------------------------------------ */
+
+.atme__main {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-inline-size: 0;
+	min-block-size: 0;
+}
+
+.atme-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-block-end: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+}
+
+.atme-toolbar__search {
+	flex: 0 1 260px;
+	min-inline-size: 120px;
+}
+
+.atme-toolbar__spacer {
+	flex: 1;
+}
+
+.atme-gridhost {
+	flex: 1;
+	overflow-y: auto;
+	padding: 12px;
+}
+
+.atme-grid {
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax( 148px, 1fr ) );
+	gap: 12px;
+	outline: none;
+}
+
+.atme-grid__sentinel {
+	block-size: 1px;
+}
+
+/* Tiles ------------------------------------------------------------------ */
+
+.atme-tile {
+	border-radius: 8px;
+	padding: 4px;
+	cursor: default;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.atme-tile:hover {
+	background: var( --os-ui-hover, rgba( 128, 128, 128, 0.12 ) );
+}
+
+.atme-tile.is-selected {
+	background: var( --os-ui-accent-soft, rgba( 34, 113, 177, 0.14 ) );
+	box-shadow: var( --os-ui-holo-glow, 0 0 0 2px var( --os-ui-accent, #2271b1 ) ), 0 0 0 2px var( --os-ui-accent, #2271b1 );
+}
+
+.atme-tile.atme-is-dragging {
+	opacity: 0.4;
+}
+
+.atme-tile__preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	gap: 4px;
+	aspect-ratio: 1;
+	overflow: hidden;
+	border-radius: 6px;
+	background: var( --os-ui-surface-elevated, rgba( 128, 128, 128, 0.08 ) );
+	color: var( --os-ui-fg-muted, #888 );
+}
+
+.atme-tile__preview img {
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+	pointer-events: none;
+}
+
+.atme-tile__preview .dashicons {
+	font-size: 40px;
+	inline-size: 40px;
+	block-size: 40px;
+}
+
+.atme-tile__ext {
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+}
+
+.atme-tile__name {
+	overflow: hidden;
+	padding: 4px 2px 2px;
+	font-size: 12px;
+	text-align: center;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Status bar ------------------------------------------------------------- */
+
+.atme-status {
+	padding: 6px 12px;
+	border-block-start: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	font-size: 12px;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+/* Inspector -------------------------------------------------------------- */
+
+.atme-inspector {
+	inline-size: 280px;
+	overflow-y: auto;
+	padding: 12px;
+	border-inline-start: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+}
+
+.atme-inspector__header {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.atme-inspector__close {
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font-size: 18px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 2px 6px;
+	border-radius: 4px;
+}
+
+.atme-inspector__close:hover {
+	background: var( --os-ui-hover, rgba( 128, 128, 128, 0.12 ) );
+}
+
+.atme-inspector__preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-block-end: 12px;
+	border-radius: 8px;
+	overflow: hidden;
+	background: var( --os-ui-surface-elevated, rgba( 128, 128, 128, 0.08 ) );
+}
+
+.atme-inspector__preview img,
+.atme-inspector__preview video {
+	max-inline-size: 100%;
+	max-block-size: 200px;
+	display: block;
+}
+
+.atme-inspector__preview .dashicons {
+	font-size: 48px;
+	inline-size: 48px;
+	block-size: 48px;
+	margin: 32px;
+	color: var( --os-ui-fg-muted, #888 );
+}
+
+.atme-field {
+	display: block;
+	margin-block-end: 10px;
+}
+
+.atme-field__label {
+	display: block;
+	margin-block-end: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-field__input {
+	inline-size: 100%;
+	box-sizing: border-box;
+}
+
+.atme-inspector__facts {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 3px 10px;
+	margin: 12px 0;
+	font-size: 12px;
+}
+
+.atme-inspector__facts dt {
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-inspector__facts dd {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.atme-inspector__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-block-end: 12px;
+}
+
+.atme-inspector__section {
+	margin-block-start: 16px;
+	padding-block-start: 12px;
+	border-block-start: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+}
+
+/* Breathing room between a section's notice, controls and buttons — the
+   lobotomized owl, so any child order keeps its rhythm. */
+.atme-inspector__section > * + * {
+	margin-block-start: 10px;
+}
+
+.atme-inspector__section h3 {
+	margin: 0 0 8px;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-inspector__hint {
+	margin: 0 0 8px;
+	font-size: 12px;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-convert {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-block-end: 8px;
+}
+
+.atme-convert__quality {
+	min-inline-size: 24px;
+	text-align: end;
+	font-variant-numeric: tabular-nums;
+}
+
+.atme-convert__mode {
+	display: block;
+	margin-block-end: 8px;
+	font-size: 12px;
+}
+
+.atme-usage__row {
+	display: block;
+	padding: 4px 0;
+	color: var( --os-ui-accent, #2271b1 );
+	text-decoration: none;
+}
+
+.atme-usage__row:hover {
+	text-decoration: underline;
+}
+
+.atme-version__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 4px 0;
+	font-size: 12px;
+}
+
+/* Buttons ---------------------------------------------------------------- */
+
+.atme-button {
+	padding: 5px 12px;
+	border: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.35 ) );
+	border-radius: 6px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.atme-button:hover {
+	background: var( --os-ui-hover, rgba( 128, 128, 128, 0.12 ) );
+}
+
+.atme-button--primary {
+	border-color: var( --os-ui-accent, #2271b1 );
+	background: var( --os-ui-accent, #2271b1 );
+	color: var( --os-ui-fg-on-accent, #fff );
+}
+
+.atme-button--primary:hover {
+	filter: brightness( 1.08 );
+	background: var( --os-ui-accent, #2271b1 );
+}
+
+.atme-button--danger {
+	color: var( --os-ui-danger, #d63638 );
+	border-color: currentColor;
+}
+
+.atme-button--small {
+	padding: 2px 8px;
+	font-size: 11px;
+}
+
+.atme-button:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.atme * {
+		scroll-behavior: auto !important;
+		transition: none !important;
+	}
+}
+
+/* Bulk bar --------------------------------------------------------------- */
+
+.atme-bulkbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 12px;
+	border-block-start: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	background: var( --os-ui-accent-soft, rgba( 34, 113, 177, 0.1 ) );
+}
+
+.atme-bulkbar__label {
+	font-weight: 600;
+	font-size: 12px;
+}
+
+/* Sidebar extras --------------------------------------------------------- */
+
+.atme-side__new {
+	color: var( --os-ui-fg-muted, #666 );
+	font-size: 12px;
+}
+
+.atme-side__row.is-drop-target {
+	background: var( --os-ui-accent-soft, rgba( 34, 113, 177, 0.2 ) );
+	box-shadow: inset 0 0 0 2px var( --os-ui-accent, #2271b1 );
+}
+
+/* Quick Look ------------------------------------------------------------- */
+
+.atme-quicklook {
+	position: absolute;
+	inset: 0;
+	z-index: 40;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	padding: 24px;
+	background: color-mix( in srgb, var( --os-window-bg, #1a1a1a ) 85%, transparent );
+	backdrop-filter: blur( 12px );
+}
+
+.atme-quicklook__stage {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-block-size: 0;
+	flex: 1;
+	inline-size: 100%;
+}
+
+.atme-quicklook__stage img,
+.atme-quicklook__stage video {
+	max-inline-size: 100%;
+	max-block-size: 100%;
+	object-fit: contain;
+	border-radius: 8px;
+	box-shadow: 0 12px 40px rgba( 0, 0, 0, 0.4 );
+}
+
+.atme-quicklook__caption {
+	font-size: 13px;
+	color: var( --os-ui-fg, #eee );
+}
+
+/* Empty state fallback --------------------------------------------------- */
+
+.atme-empty {
+	padding: 16px 0;
+	text-align: center;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-empty__title {
+	margin: 0 0 4px;
+	font-weight: 600;
+}
+
+.atme-empty__body {
+	margin: 0;
+	font-size: 12px;
+}
+
+/* Wizard ------------------------------------------------------------------ */
+
+.atme-wizard {
+	position: absolute;
+	inset: 0;
+	z-index: 30;
+	overflow-y: auto;
+	padding: 28px 24px 32px;
+	background: var( --os-window-bg, #fff );
+}
+
+/* One readable column, centered — a wizard is a document, not a dashboard. */
+.atme-wizard__inner {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	max-inline-size: 620px;
+	margin-inline: auto;
+}
+
+.atme-wizard__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding-block-end: 16px;
+	border-block-end: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.2 ) );
+}
+
+/* The progress strip: labelled dots on one line. */
+.atme-wizard__strip {
+	display: flex;
+	align-items: center;
+	gap: 0;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.atme-wizard__step {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	color: var( --os-ui-fg-muted, #888 );
+}
+
+/* The connecting line between steps. */
+.atme-wizard__step + .atme-wizard__step::before {
+	content: '';
+	inline-size: 28px;
+	block-size: 1px;
+	margin-inline: 10px;
+	background: var( --os-ui-border, rgba( 128, 128, 128, 0.3 ) );
+}
+
+.atme-wizard__stepdot {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 22px;
+	block-size: 22px;
+	border-radius: 50%;
+	border: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.4 ) );
+	font-size: 11px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.atme-wizard__steplabel {
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.atme-wizard__step.is-current {
+	color: var( --os-ui-fg, #1e1e1e );
+}
+
+.atme-wizard__step.is-current .atme-wizard__stepdot {
+	border-color: transparent;
+	background: var( --os-ui-holo-fill, var( --os-ui-accent, #2271b1 ) );
+	color: var( --os-ui-holo-ink, var( --os-ui-fg-on-accent, #fff ) );
+	box-shadow: var( --os-ui-holo-glow, none );
+}
+
+.atme-wizard__step.is-current .atme-wizard__steplabel {
+	font-weight: 600;
+}
+
+.atme-wizard__step.is-done {
+	color: var( --os-ui-fg, #1e1e1e );
+}
+
+.atme-wizard__step.is-done .atme-wizard__stepdot {
+	border-color: var( --os-ui-accent, #2271b1 );
+	color: var( --os-ui-accent, #2271b1 );
+}
+
+.atme-wizard__title {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+.atme-wizard__body {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.atme-wizard__card {
+	padding: 12px;
+	border: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	border-radius: 8px;
+}
+
+.atme-wizard__card h3 {
+	margin: 0 0 8px;
+	font-size: 13px;
+}
+
+.atme-wizard__actions {
+	display: flex;
+	gap: 8px;
+	margin-block-start: 4px;
+}
+
+.atme-wizard__progress {
+	inline-size: 100%;
+}
+
+.atme-wizard__progresstext {
+	font-size: 12px;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-wizard__resume {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px;
+	border: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	border-radius: 8px;
+}
+
+.atme-wizard__failures {
+	margin: 0;
+	padding-inline-start: 18px;
+	font-size: 12px;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+/* List view --------------------------------------------------------------- */
+
+.atme-tile__meta {
+	display: none;
+}
+
+.atme-grid--list {
+	grid-template-columns: 1fr;
+	gap: 2px;
+}
+
+.atme-grid--list .atme-tile {
+	display: grid;
+	grid-template-columns: 40px minmax( 0, 2fr ) minmax( 0, 3fr );
+	align-items: center;
+	gap: 10px;
+	padding: 4px 8px;
+}
+
+.atme-grid--list .atme-tile__preview {
+	aspect-ratio: 1;
+	inline-size: 40px;
+	block-size: 40px;
+}
+
+.atme-grid--list .atme-tile__preview .dashicons {
+	font-size: 20px;
+	inline-size: 20px;
+	block-size: 20px;
+}
+
+.atme-grid--list .atme-tile__ext {
+	display: none;
+}
+
+.atme-grid--list .atme-tile__name {
+	text-align: start;
+	padding: 0;
+}
+
+.atme-grid--list .atme-tile__meta {
+	display: block;
+	overflow: hidden;
+	font-size: 12px;
+	color: var( --os-ui-fg-muted, #666 );
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Viewer ------------------------------------------------------------------ */
+
+.atme-viewer {
+	display: flex;
+	block-size: 100%;
+	min-block-size: 0;
+	color: var( --os-ui-fg, #eee );
+	outline: none;
+}
+
+.atme-viewer__main {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-inline-size: 0;
+	min-block-size: 0;
+}
+
+.atme-viewer__toolbar {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	border-block-end: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	background: var( --os-window-bg, #1a1a1a );
+}
+
+.atme-viewer__zoomlabel {
+	min-inline-size: 44px;
+	text-align: center;
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	color: var( --os-ui-fg-muted, #999 );
+}
+
+.atme-viewer__spacer {
+	flex: 1;
+}
+
+/* The stage: darker than the window so the photo owns the light. */
+.atme-viewer__stage {
+	position: relative;
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	min-block-size: 0;
+	background: color-mix( in srgb, var( --os-window-bg, #111 ) 45%, #000 );
+}
+
+.atme-viewer__media {
+	max-inline-size: none;
+	max-block-size: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.atme-viewer__media.is-pannable {
+	cursor: grab;
+}
+
+.atme-viewer__media.is-pannable:active {
+	cursor: grabbing;
+}
+
+.atme-viewer__media--intrinsic {
+	max-inline-size: 92%;
+	max-block-size: 92%;
+}
+
+.atme-viewer__media--frame {
+	inline-size: 94%;
+	block-size: 94%;
+	border: 0;
+	background: #fff;
+	border-radius: 6px;
+}
+
+.atme-viewer__filechip {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	color: var( --os-ui-fg-muted, #999 );
+}
+
+.atme-viewer__filechip .dashicons {
+	font-size: 56px;
+	inline-size: 56px;
+	block-size: 56px;
+}
+
+.atme-viewer__gone {
+	color: var( --os-ui-fg-muted, #999 );
+}
+
+/* ← / → hover arrows. */
+.atme-viewer__nav {
+	position: absolute;
+	inset-block-start: 50%;
+	translate: 0 -50%;
+	z-index: 5;
+	inline-size: 40px;
+	block-size: 64px;
+	border: 0;
+	border-radius: 8px;
+	background: color-mix( in srgb, var( --os-window-bg, #111 ) 55%, transparent );
+	color: var( --os-ui-fg, #eee );
+	font-size: 26px;
+	line-height: 1;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.atme-viewer__nav--prev {
+	inset-inline-start: 10px;
+}
+
+.atme-viewer__nav--next {
+	inset-inline-end: 10px;
+}
+
+.atme-viewer__stage:hover .atme-viewer__nav:not([hidden]) {
+	opacity: 1;
+}
+
+.atme-viewer__nav:hover {
+	background: color-mix( in srgb, var( --os-window-bg, #111 ) 85%, #000 );
+}
+
+.atme-viewer__caption {
+	padding: 7px 12px;
+	border-block-start: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	background: var( --os-window-bg, #1a1a1a );
+	font-size: 12px;
+	color: var( --os-ui-fg-muted, #999 );
+	text-align: center;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* The ⓘ drawer wears the inspector's own styles; this only places it. */
+.atme-viewer__drawer {
+	flex: 0 0 auto;
+	border-inline-start: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	background: var( --os-window-bg, #1a1a1a );
+}
+
+.atme-viewer__drawer[hidden] {
+	display: none;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.atme-viewer__nav {
+		transition: none;
+	}
+}

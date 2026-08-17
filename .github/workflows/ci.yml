@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Least privilege: this workflow only reads the repository to lint, build and
+# test. It never writes commits, comments or releases.
+permissions:
+  contents: read
+
+jobs:
+  js:
+    name: Types · Vitest · Bundles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Don't leave the GITHUB_TOKEN in .git/config; later steps run
+          # PR-authored code (npm scripts, the Vite build) and nothing here
+          # needs git auth after checkout.
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript (no emit)
+        run: npm run typecheck
+
+      - name: Vitest
+        run: npm run test
+
+      # assets/ is committed on purpose -- the plugin installs straight from a
+      # checkout or a zip with no npm install, which is the whole reason the
+      # bundles are in version control. That only holds while the committed
+      # files match the source: rebuild and fail if the tree moves, which
+      # catches a TypeScript change that was never rebuilt.
+      - name: Committed bundles match source
+        run: |
+          npm run build:bundles
+          git diff --exit-code -- assets/ || {
+            echo "::error::assets/ is out of date. Run 'npm run build' and commit the result."
+            exit 1
+          }
+
+  php:
+    name: PHPUnit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `.wp-env.json` mounts this repository with `mappings` rather than
+      # listing it under `plugins`, which would make wp-env activate it — and
+      # activation is exactly what cannot happen here. The plugin declares
+      # `Requires Plugins: desktop-mode`, and a runner has no OpenStation, so
+      # WordPress would refuse and `wp-env start` would exit non-zero before a
+      # single test runs.
+      #
+      # Nothing is lost by mounting it inactive. The PHPUnit bootstrap loads
+      # the plugin itself on `muplugins_loaded` and stubs the OpenStation
+      # functions it calls, so the shell never needs to be installed.
+      - name: Start wp-env
+        run: npm run env:start
+
+      # No Composer, by house rule. The toolchain is PHPUnit's signed PHAR
+      # plus the Yoast polyfills tarball, fetched by bin/fetch-php-tools.mjs;
+      # test-php.mjs resolves to the wp-env backend on its own — the local QA
+      # compose project it prefers does not exist on a runner. Same command a
+      # laptop runs, so a green run here means the same thing.
+      #
+      # (No PHPCS job for the same reason: WPCS is a Composer-shaped install.
+      # Standards are enforced in review; Plugin Check below covers the
+      # WordPress.org-blocking subset mechanically.)
+      - name: PHPUnit
+        run: npm run test:php
+
+  plugin-check:
+    name: Plugin Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the bundles
+        run: npm run build:bundles
+
+      # Mounted inactive — see the note on the php job.
+      - name: Start wp-env
+        run: npm run env:start
+
+      # The same command that runs locally, so a green run here means the same
+      # thing as a green run on a laptop. It installs Plugin Check on first use
+      # and fails the job on any finding at severity 5 or above -- the level
+      # that fails the WordPress.org review queue.
+      - name: Plugin Check
+        run: npm run plugin:check
