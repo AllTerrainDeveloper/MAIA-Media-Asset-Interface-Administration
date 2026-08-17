@@ -27,6 +27,7 @@ export const EXCLUDED = new Set( [
 
 	// Developer documentation. `readme.txt` is the one users see, and it ships.
 	'README.md',
+	'PLAN.md',
 
 	// Output of a packaging step.
 	'dist',
@@ -46,5 +47,7 @@ export const EXCLUDED = new Set( [
  * @return {boolean} True when it ships.
  */
 export function ships( name ) {
-	return ! name.startsWith( '.' ) && ! EXCLUDED.has( name );
+	// `BUG-*.md` files are shell bug reports filed in the repo root (sibling
+	// convention) — working notes for upstream, never payload.
+	return ! name.startsWith( '.' ) && ! name.startsWith( 'BUG-' ) && ! EXCLUDED.has( name );
 }

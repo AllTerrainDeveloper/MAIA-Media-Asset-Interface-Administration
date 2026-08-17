@@ -1,15 +1,15 @@
-=== MAIA - Media Asset Interface and Administration ===
+=== MAIA — Media Asset Interface & Administration ===
 Contributors: allterraindev
 Tags: media library, folders, webp, avif, openstation
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 0.1.0
 Requires Plugins: desktop-mode
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-MAIA: the media library WordPress should have shipped, as an OpenStation desktop app — folders, conversion, replace-in-place, versions, a viewer, a wizard.
+The media library WordPress should have shipped: folders, conversion, replace-in-place, versions, viewer and wizard on the OpenStation desktop.
 
 == Description ==
 

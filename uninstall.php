@@ -14,19 +14,19 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 global $wpdb;
 
-// The stashed version files, then the directory.
+// The stashed version files, then the directory — through WP_Filesystem,
+// which is the API uninstall code is expected to speak.
 $atme_upload_dir   = wp_upload_dir();
 $atme_versions_dir = trailingslashit( $atme_upload_dir['basedir'] ) . 'atme-versions/';
 
 if ( is_dir( $atme_versions_dir ) ) {
-	foreach ( (array) glob( $atme_versions_dir . '*' ) as $atme_version_file ) {
-		if ( is_file( $atme_version_file ) ) {
-			wp_delete_file( $atme_version_file );
-		}
-	}
+	global $wp_filesystem;
 
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
-	@rmdir( $atme_versions_dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+
+	if ( WP_Filesystem() && $wp_filesystem ) {
+		$wp_filesystem->delete( $atme_versions_dir, true );
+	}
 }
 
 // Collections are ours; attachments are not.
