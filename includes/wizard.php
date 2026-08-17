@@ -167,14 +167,15 @@ function atme_wizard_scan_chunk( $offset, $limit ) {
  * @return array[] Zero or one finding rows.
  */
 function atme_wizard_duplicate_findings( $id, $title, $hash ) {
+	// No `exclude` arg — exclusionary query params defeat the query cache,
+	// and dropping our own id from six rows is cheaper in PHP anyway.
 	$twins = get_posts(
 		array(
 			'post_type'      => 'attachment',
 			'post_status'    => 'inherit',
-			'posts_per_page' => 5,
+			'posts_per_page' => 6,
 			'fields'         => 'ids',
 			'no_found_rows'  => true,
-			'exclude'        => array( $id ),
 			'meta_key'       => ATME_META_HASH, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 			'meta_value'     => $hash, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 		)

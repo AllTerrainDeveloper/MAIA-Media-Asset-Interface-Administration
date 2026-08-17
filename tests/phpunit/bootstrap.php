@@ -47,6 +47,19 @@ if ( ! $atme_tests_dir || ! file_exists( $atme_tests_dir . '/includes/functions.
 	exit( 1 );
 }
 
+// The WP test library hard-requires the Yoast PHPUnit Polyfills and wants
+// an ABSOLUTE path to them. Without Composer they arrive as a tarball under
+// bin/ (see bin/fetch-php-tools.mjs); pointing the constant there from here
+// covers every runner, while environments with their own copy (the QA
+// container's vendor tree) keep it by defining the constant first.
+if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
+	$atme_polyfills = dirname( __DIR__, 2 ) . '/bin/phpunit-polyfills/phpunitpolyfills-autoload.php';
+
+	if ( file_exists( $atme_polyfills ) ) {
+		define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', $atme_polyfills );
+	}
+}
+
 require_once $atme_tests_dir . '/includes/functions.php';
 
 /**

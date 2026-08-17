@@ -60,20 +60,20 @@ function atme_media_usage( $attachment_id ) {
 	$url  = (string) wp_get_attachment_url( $attachment_id );
 	$stem = $url ? preg_replace( '/\.[a-z0-9]+$/i', '', wp_basename( $url ) ) : '';
 
-	$likes  = array( '%wp-image-' . $attachment_id . '%' );
-	$likes[] = '%wp:image {"id":' . $attachment_id . ',%';
+	// Three spellings, fixed arity so the placeholders are visible to the
+	// query as written. A file with no URL gets a sentinel no post contains,
+	// which keeps the shape without matching the world.
+	$like_class = '%wp-image-' . $attachment_id . '%';
+	$like_block = '%wp:image {"id":' . $attachment_id . ',%';
+	$like_stem  = $stem ? '%' . $wpdb->esc_like( $stem ) . '%' : 'atme-no-such-file-' . $attachment_id;
 
-	if ( $stem ) {
-		$likes[] = '%' . $wpdb->esc_like( $stem ) . '%';
-	}
-
-	$where = implode( ' OR ', array_fill( 0, count( $likes ), 'post_content LIKE %s' ) );
-
-	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$content_ids = $wpdb->get_col(
 		$wpdb->prepare(
-			"SELECT ID FROM {$wpdb->posts} WHERE post_type NOT IN ( 'revision', 'attachment' ) AND post_status NOT IN ( 'trash', 'auto-draft' ) AND ( {$where} ) LIMIT 100", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$likes
+			"SELECT ID FROM {$wpdb->posts} WHERE post_type NOT IN ( 'revision', 'attachment' ) AND post_status NOT IN ( 'trash', 'auto-draft' ) AND ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s ) LIMIT 100",
+			$like_class,
+			$like_block,
+			$like_stem
 		)
 	);
 
