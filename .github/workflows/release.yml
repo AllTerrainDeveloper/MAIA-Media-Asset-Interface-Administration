@@ -44,6 +44,9 @@ jobs:
       # as a shell variable rather than interpolated into `run:` bodies, so the
       # dispatch input cannot inject into the script.
       TAG: ${{ inputs.tag || github.ref_name }}
+      # `secrets` is not a context step-`if`s may read, so the presence check
+      # is precomputed here where it is.
+      HAS_SVN_CREDENTIALS: ${{ secrets.SVN_USERNAME != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -124,7 +127,7 @@ jobs:
       # WordPress.org approval exists, a red deploy step on every release
       # would train everyone to ignore red.
       - name: Deploy to WordPress.org
-        if: ${{ !contains(env.TAG, '-') && secrets.SVN_USERNAME != '' }}
+        if: ${{ !contains(env.TAG, '-') && env.HAS_SVN_CREDENTIALS == 'true' }}
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
