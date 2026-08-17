@@ -12,6 +12,8 @@ Part of the AllTerrain family.**
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-47%20PHP%20%2B%2075%20JS-brightgreen)](#testing)
 
+![The MAIA library window on the OpenStation desktop](.github/screenshots/library.png)
+
 </div>
 
 ---
@@ -32,6 +34,28 @@ Gutenberg post, on an AllTerrain Work card, in an AllTerrain Fields image
 field, or in a wallpaper folder. The payload is byte-for-byte the shape WP
 Explorer emits, so every existing drop target accepts it with zero new
 code.
+
+## A look around
+
+**The viewer.** Double-click anything — a grid tile, a file on the wallpaper
+— and the photo opens full bleed: wheel/pinch zoom with panning, fit/1:1,
+← / → walks the library, and the ⓘ drawer is the entire inspector, from
+EXIF to version rollback.
+
+<img src=".github/screenshots/viewer.png" alt="The MAIA Viewer: a photo on a dark stage with the info drawer open" width="820">
+
+**The wizard.** Scan the library, see what could be better — legacy formats,
+missing alt text, duplicates, oversized originals — pick the remedies, and
+watch a resumable batch fix them. Nothing is deleted, everything converted
+in place keeps its original as a version.
+
+<img src=".github/screenshots/wizard.png" alt="The Optimization Wizard's findings step" width="820">
+
+**Windows that know each other.** Open a photo from the library and the
+desktop draws the tie: the viewer declares itself a child of the library
+window, and OpenStation's relations engine connects them.
+
+<img src=".github/screenshots/relations.png" alt="A relation line connecting the MAIA viewer window to the library window" width="820">
 
 ## The decisions
 
