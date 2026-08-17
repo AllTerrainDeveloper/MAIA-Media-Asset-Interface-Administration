@@ -120,8 +120,11 @@ jobs:
 
       # Prereleases (v1.0.0-rc1) stop at the GitHub Release: WordPress.org has
       # no concept of one, and pushing it would make it the live download.
+      # Also skipped while the SVN credentials are not configured — before the
+      # WordPress.org approval exists, a red deploy step on every release
+      # would train everyone to ignore red.
       - name: Deploy to WordPress.org
-        if: ${{ !contains(env.TAG, '-') }}
+        if: ${{ !contains(env.TAG, '-') && secrets.SVN_USERNAME != '' }}
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
