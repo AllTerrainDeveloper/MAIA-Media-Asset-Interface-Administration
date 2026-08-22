@@ -3213,8 +3213,14 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
               void getShell().ai.ask(
                 `Write concise, descriptive alt text (under 15 words, no quotes, no "image of") for a WordPress media item. Its file URL is ${item.url}, its title is "${item.title}" and its caption is "${item.caption}". Reply with the alt text only.`
               ).then((answer) => {
-                const alt = String(answer ?? "").trim().replace(/^"|"$/g, "");
-                if (!alt) {
+                const text = typeof answer === "string" ? answer : String(answer?.message ?? "");
+                const alt = text.trim().replace(/^"|"$/g, "");
+                if (!alt || alt.length > 300) {
+                  getShell()?.notify?.({
+                    title: "No suggestion",
+                    body: "The assistant did not return usable alt text.",
+                    type: "error"
+                  });
                   return;
                 }
                 return updateMedia(item.id, { alt_text: alt }).then((fresh) => {

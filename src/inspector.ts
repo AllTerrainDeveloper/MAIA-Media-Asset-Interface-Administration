@@ -192,9 +192,22 @@ export function mountInspector( host: HTMLElement, delegate: InspectorDelegate )
 								`Write concise, descriptive alt text (under 15 words, no quotes, no "image of") for a WordPress media item. Its file URL is ${ item.url }, its title is "${ item.title }" and its caption is "${ item.caption }". Reply with the alt text only.`
 							)
 							.then( ( answer ) => {
-								const alt = String( answer ?? '' ).trim().replace( /^"|"$/g, '' );
+								// The assistant resolves an AskResult envelope; the
+								// reply text is its `message`. Anything else — a
+								// tool call, an empty reply — is not alt text.
+								const text =
+									typeof answer === 'string'
+										? answer
+										: String( answer?.message ?? '' );
+								const alt = text.trim().replace( /^"|"$/g, '' );
 
-								if ( ! alt ) {
+								if ( ! alt || alt.length > 300 ) {
+									getShell()?.notify?.( {
+										title: 'No suggestion',
+										body: 'The assistant did not return usable alt text.',
+										type: 'error',
+									} );
+
 									return;
 								}
 

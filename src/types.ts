@@ -218,7 +218,15 @@ export interface ShellApi {
 		openMedia?: ( opts: { mediaId: number; mediaTitle?: string } ) => void;
 	};
 	ai?: {
-		ask?: ( prompt: string, opts?: Record< string, unknown > ) => Promise< string >;
+		/**
+		 * Resolves an AskResult envelope — the reply text is `.message`,
+		 * never the value itself. (`String( result )` is how
+		 * "[object Object]" ends up in a form field.)
+		 */
+		ask?: (
+			prompt: string,
+			opts?: Record< string, unknown >
+		) => Promise< string | { message?: string; answer_type?: string } >;
 	};
 	config?: { adminUrl?: string };
 	hooks?: {
