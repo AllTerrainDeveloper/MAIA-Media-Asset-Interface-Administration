@@ -137,6 +137,11 @@ class Tests_ATME_Convert_And_Replace extends WP_UnitTestCase {
 
 		// The rollback itself stashed the PNG — undo has an undo.
 		$this->assertCount( 2, atme_version_history( $id ) );
+		$files = wp_list_pluck( atme_versions_of( $id ), 'file' );
+		$this->assertCount( 2, array_unique( $files ) );
+		foreach ( $files as $file ) {
+			$this->assertFileExists( atme_versions_dir() . $file );
+		}
 	}
 
 	/**
@@ -183,6 +188,11 @@ class Tests_ATME_Convert_And_Replace extends WP_UnitTestCase {
 		atme_stash_version( $id );
 
 		$this->assertCount( 2, atme_version_history( $id ) );
+		$files = wp_list_pluck( atme_versions_of( $id ), 'file' );
+		$this->assertCount( 2, array_unique( $files ) );
+		foreach ( $files as $file ) {
+			$this->assertFileExists( atme_versions_dir() . $file );
+		}
 
 		remove_all_filters( 'atme_version_cap' );
 	}

@@ -44,7 +44,7 @@ function atme_render_admin_page() {
 	$has_shell = atme_shell_has( 'register_window' );
 	?>
 	<div class="wrap">
-		<h1><?php esc_html_e( 'MAIA — Media Asset Interface & Administration', 'allterrain-media-explorer' ); ?></h1>
+		<h1><?php esc_html_e( 'MAIA', 'allterrain-media-explorer' ); ?></h1>
 		<?php if ( ! $has_shell ) : ?>
 			<p><?php esc_html_e( 'MAIA is an OpenStation desktop app, and OpenStation is not active on this site. Install and activate it, and MAIA will be waiting in the dock.', 'allterrain-media-explorer' ); ?></p>
 		<?php elseif ( ! atme_shell_is_active() ) : ?>

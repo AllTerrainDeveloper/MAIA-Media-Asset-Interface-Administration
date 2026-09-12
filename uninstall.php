@@ -62,3 +62,6 @@ $wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ( '_atme_versions
 // phpcs:enable
 
 delete_option( 'atme_wizard_state' );
+
+// Wizard queues are scoped to the user and this site.
+delete_metadata( 'user', 0, $wpdb->prefix . 'atme_wizard_state', '', true );

@@ -57,11 +57,7 @@ function loadCodec(): Promise< NonNullable< Window[ 'atmeCodec' ] > > {
 			const config = getConfig();
 			const script = document.createElement( 'script' );
 
-			// The plugin URL is the REST URL's sibling; derive it from what
-			// config already carries rather than adding another field.
-			const base = config.restUrl.replace( /wp-json\/.*$/, '' );
-
-			script.src = `${ base }wp-content/plugins/allterrain-media-explorer/assets/js/codec.min.js?ver=${ config.version }`;
+			script.src = config.codecUrl;
 			script.async = true;
 			script.onload = () => {
 				if ( window.atmeCodec ) {
@@ -70,7 +66,11 @@ function loadCodec(): Promise< NonNullable< Window[ 'atmeCodec' ] > > {
 					reject( new Error( 'The codec bundle loaded but registered nothing.' ) );
 				}
 			};
-			script.onerror = () => reject( new Error( 'The codec bundle could not be fetched.' ) );
+			script.onerror = () => {
+				codecPromise = null;
+				script.remove();
+				reject( new Error( 'The codec bundle could not be fetched.' ) );
+			};
 			document.head.appendChild( script );
 		} );
 	}

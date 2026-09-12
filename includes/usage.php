@@ -120,7 +120,10 @@ function atme_media_usage( $attachment_id ) {
 	 * @param array[] $rows          Usage rows.
 	 * @param int     $attachment_id The attachment.
 	 */
-	return apply_filters( 'atme_media_usage', $rows, $attachment_id );
+	$rows = apply_filters( 'atme_media_usage', $rows, $attachment_id );
+	return array_values( array_filter( $rows, static function ( $row ) {
+		return empty( $row['postId'] ) || current_user_can( 'edit_post', (int) $row['postId'] );
+	} ) );
 }
 
 /**

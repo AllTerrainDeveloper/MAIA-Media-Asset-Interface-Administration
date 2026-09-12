@@ -20,6 +20,7 @@ import {
 	updateMedia,
 } from './api';
 import { rotateMedia } from './api';
+import { suggestAltText } from './ai';
 import { confirmAndDelete } from './app';
 import { browserEncodeSupport, downloadAs } from './convert-client';
 import { readExif } from './exif';
@@ -149,7 +150,7 @@ export function mountInspector( host: HTMLElement, delegate: InspectorDelegate )
 						return;
 					}
 
-					void updateMedia( current.id, { [ key ]: next } )
+					void updateMedia( item.id, { [ key ]: next } )
 						.then( ( fresh ) => {
 							lastSaved = next;
 
@@ -187,34 +188,18 @@ export function mountInspector( host: HTMLElement, delegate: InspectorDelegate )
 					onClick: () => {
 						suggest.setAttribute( 'disabled', '' );
 
-						void getShell()!
-							.ai!.ask!(
-								`Write concise, descriptive alt text (under 15 words, no quotes, no "image of") for a WordPress media item. Its file URL is ${ item.url }, its title is "${ item.title }" and its caption is "${ item.caption }". Reply with the alt text only.`
-							)
-							.then( ( answer ) => {
-								// The assistant resolves an AskResult envelope; the
-								// reply text is its `message`. Anything else — a
-								// tool call, an empty reply — is not alt text.
-								const text =
-									typeof answer === 'string'
-										? answer
-										: String( answer?.message ?? '' );
-								const alt = text.trim().replace( /^"|"$/g, '' );
-
-								if ( ! alt || alt.length > 300 ) {
-									getShell()?.notify?.( {
-										title: 'No suggestion',
-										body: 'The assistant did not return usable alt text.',
-										type: 'error',
-									} );
-
+						void suggestAltText( item )
+							.then( ( alt ) => {
+								if ( ! alt || epoch !== thisEpoch ) {
 									return;
 								}
 
 								return updateMedia( item.id, { alt_text: alt } ).then( ( fresh ) => {
 									getShell()?.showToast?.( { message: 'Alt text drafted — give it a read' } );
 									delegate.onChanged( fresh );
-									render( fresh );
+									if ( epoch === thisEpoch ) {
+										render( fresh );
+									}
 								} );
 							} )
 							.catch( ( error: Error ) =>
@@ -444,7 +429,7 @@ export function mountInspector( host: HTMLElement, delegate: InspectorDelegate )
 
 		if ( rows.length === 0 ) {
 			body.appendChild(
-				emptyStateEl( { title: 'Not used anywhere', body: 'Safe to delete.', icon: 'dashicons-yes-alt' } )
+				emptyStateEl( { title: 'No visible references found', body: 'Other posts, plugins or external sites may still use this file.', icon: 'dashicons-yes-alt' } )
 			);
 
 			return;
@@ -541,6 +526,7 @@ export function mountInspector( host: HTMLElement, delegate: InspectorDelegate )
 		show: render,
 		showEmpty: renderEmpty,
 		destroy: () => {
+			epoch += 1;
 			host.textContent = '';
 			current = null;
 		},
@@ -613,7 +599,7 @@ function buildConvertSection( item: MediaItem, delegate: InspectorDelegate ): HT
 
 	section.appendChild(
 		checkboxControl( {
-			label: 'Replace in place (same URL; the old file is kept as a version)',
+			label: 'Replace this attachment (a new format changes its URL)',
 			onChange: ( checked ) => {
 				state.replace = checked;
 			},
@@ -673,7 +659,7 @@ function buildReplaceSection( item: MediaItem, delegate: InspectorDelegate ): HT
 	section.appendChild( title );
 
 	section.appendChild(
-		noticeEl( 'Swap the file, keep the URL. Every post using it shows the new one; the old file becomes a version.' )
+		noticeEl( 'The old file becomes a version. Same-format replacements keep the URL. Changing format changes the URL; existing embedded links may need updating.' )
 	);
 
 	const picker = document.createElement( 'input' );

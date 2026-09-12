@@ -17,16 +17,7 @@ import { openViewer } from './view-open';
 
 const WINDOW_ID = 'allterrain-media-explorer';
 
-/** The topic the explorer window listens for reveals on (see app.ts). */
-const REVEAL_TOPIC = 'atme.reveal';
-
-/**
- * Opens the explorer window and asks it to reveal one item.
- *
- * The window may not exist yet, and a broadcast into a window that is still
- * booting lands nowhere — so the id is also parked on a global the app reads
- * on mount. Whichever path wins, the other is a no-op.
- */
+/** Opens or retargets the library using persistent window params. */
 function openAndReveal( id: number ): void {
 	const shell = getShell();
 
@@ -34,14 +25,9 @@ function openAndReveal( id: number ): void {
 		return;
 	}
 
-	if ( id > 0 ) {
-		( window as unknown as { __atmeReveal?: number } ).__atmeReveal = id;
-	}
-
-	shell.openWindow?.( WINDOW_ID, { source: 'allterrain-media-explorer' } );
-
-	if ( id > 0 ) {
-		shell.broadcast?.( REVEAL_TOPIC, { id } );
+	shell.openWindow?.( WINDOW_ID, { source: 'allterrain-media-explorer', params: { mediaId: id } } );
+	if ( id > 0 && ! shell.getWindowConfig?.< { osApp?: boolean } >( WINDOW_ID )?.osApp ) {
+		shell.broadcast?.( 'atme.reveal', { id } );
 	}
 }
 
@@ -160,9 +146,10 @@ function registerCommands(): void {
 		description: 'Scan the library for oversized images, legacy formats, missing alt text and duplicates.',
 		icon: 'dashicons-superhero',
 		run: () => {
-			( window as unknown as { __atmeWizard?: boolean } ).__atmeWizard = true;
-			openAndReveal( 0 );
-			getShell()?.broadcast?.( 'atme.wizard', {} );
+			getShell()?.openWindow?.( WINDOW_ID, { params: { wizard: true } } );
+			if ( ! getShell()?.getWindowConfig?.< { osApp?: boolean } >( WINDOW_ID )?.osApp ) {
+				getShell()?.broadcast?.( 'atme.wizard', {} );
+			}
 
 			return 'Opening the optimization wizard…';
 		},

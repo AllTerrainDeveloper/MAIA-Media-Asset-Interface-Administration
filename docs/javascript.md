@@ -8,9 +8,9 @@ Three bundles, three schedules, one drag model.
 | `shell` | `assets/js/shell[.min].js` | At shell boot. File openers, ⌘K commands, WP Explorer action, icon drop handler. |
 | `codec` | `assets/js/codec[.min].js` | On first browser-side AVIF encode, script-injected by `convert-client.ts`. Self-contained WASM. |
 
-The `explorer` bundle registers **two** native window callbacks: the
-explorer (`allterrain-media-explorer`) and the Media Viewer (`atme-viewer`,
-subject via `ctx.params.mediaId`). Viewer keyboard: ← / → walks neighbors,
+The `explorer` bundle queues **two** App Framework client views: the
+explorer (`allterrain-media-explorer`) and the Media Viewer (`atme-viewer`).
+On older shells it registers the native callbacks instead. Viewer keyboard: ← / → walks neighbors,
 `+ − 0 1` zooms, `i` toggles the info drawer — claimed via a
 *window*-capture listener, because the shell owns bare arrows (Space
 switching) at document capture and Window fires first in that phase.
@@ -20,8 +20,9 @@ prints `window.allTerrainMediaExplorer`:
 
 ```typescript
 interface Config {
-	restUrl: string;      // …/wp-json/atme/v1
-	wpRestUrl: string;    // …/wp-json/wp/v2
+	codecUrl: string;     // PHP-generated local codec URL, including cache version
+	restUrl: string;      // …/wp-json/atme/v1 or ?rest_route=/atme/v1
+	wpRestUrl: string;    // …/wp-json/wp/v2 or ?rest_route=/wp/v2
 	nonce: string;        // sent only when wp.os.fetch is absent
 	adminUrl: string;
 	uploadUrl: string;
@@ -83,9 +84,24 @@ anywhere on the window and upload into the current folder.
 | `atme.wizard` | `{}` | Ask an open explorer window to open the Optimization Wizard. |
 | `atme.view` | `{ id: number }` | Ask the Media Viewer to show an item (retargets an open viewer; `openViewer()` also passes `params.mediaId` for cold opens). |
 
-`window.__atmeReveal` / `window.__atmeWizard` are the parking spots for the
-same requests when the window is not open yet; the app consumes them on
-mount. Treat them as internal.
+Cold opens and session restore use `wp.os.openWindow()` params. The framework's
+`reopen` lifecycle applies new params to an existing singleton. No global parking
+spots are used. Existing broadcast topics remain supported for integrations.
+
+```javascript
+wp.os.openWindow( 'allterrain-media-explorer', { params: { mediaId: 42 } } );
+wp.os.openWindow( 'allterrain-media-explorer', { params: { wizard: true } } );
+wp.os.openWindow( 'atme-viewer', { params: { mediaId: 42 } } );
+```
+
+App definitions and dispatch state are **Experimental**. `mediaId` is checked
+against the acting user's attachment permissions before mount/reopen. `wizard`
+must be a boolean. `revision` is internal to lifecycle synchronization.
+
+AI drafting is explicitly requested and confirmed through `suggestAltText()`.
+The same gate discloses the image URL, title and caption before calling
+`wp.os.ai.ask()`. The returned `message` must be a usable string; closing or
+retargeting the inspector invalidates pending suggestions.
 
 ## The codec global — Experimental
 

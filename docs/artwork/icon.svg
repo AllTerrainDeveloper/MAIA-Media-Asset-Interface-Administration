@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<title>MAIA icon — an M with a media folder badge</title>
+<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#dfd6c4" stroke-width=".7"/></pattern></defs>
+<rect width="256" height="256" fill="#f4eddd"/>
+<rect width="256" height="256" fill="url(#grid)"/>
+<circle cx="251" cy="15" r="105" fill="#a9b697"/>
+<circle cx="18" cy="253" r="88" fill="#e8b994"/>
+<text x="29" y="184" font-family="Fraunces" font-size="188" font-weight="900" letter-spacing="-8" fill="#302c25">M</text>
+<circle cx="198" cy="199" r="49" fill="#b95b36"/>
+<path d="M171 181Q171 176 176 176H190L198 184H220Q225 184 225 189V217Q225 222 220 222H176Q171 222 171 217Z" fill="#fbf0d9"/>
+<path d="M172 191H224" stroke="#b95b36" stroke-width="3"/>
+</svg>

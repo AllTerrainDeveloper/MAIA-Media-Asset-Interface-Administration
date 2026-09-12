@@ -52,6 +52,11 @@ jobs:
             exit 1
           }
 
+      - name: Artwork and package
+        run: |
+          npm run artwork:check
+          node bin/package.mjs
+
   php:
     name: PHPUnit
     runs-on: ubuntu-latest
@@ -78,8 +83,17 @@ jobs:
       # single test runs.
       #
       # Nothing is lost by mounting it inactive. The PHPUnit bootstrap loads
-      # the plugin itself on `muplugins_loaded` and stubs the OpenStation
-      # functions it calls, so the shell never needs to be installed.
+      # the plugin itself on `muplugins_loaded`. The pinned fixture supplies
+      # the real App Framework for contract tests; the full shell is not activated.
+      - name: App Framework contract fixture
+        uses: actions/checkout@v4
+        with:
+          repository: WordPress/openstation
+          ref: 7545b530bf6ba420ebdd647a0d7e418a415d5215
+          path: .test-framework
+          sparse-checkout: includes/framework
+          persist-credentials: false
+
       - name: Start wp-env
         run: npm run env:start
 

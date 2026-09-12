@@ -18,9 +18,8 @@
  * being run at all.
  *
  * Force a backend with `ATME_PHP_BACKEND=alcazaba|wp-env`. Override the
- * compose container with `ATME_PHP_CONTAINER`. Skips with a note rather than
- * failing when neither environment is up, so `npm test` on a fresh machine is
- * still useful.
+ * compose container with `ATME_PHP_CONTAINER`. Fails when neither environment is up, so a missing test backend cannot
+ * produce a green release check. `npm test` still runs JS tests independently.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -62,8 +61,8 @@ function containerIsUp( name ) {
  * @param {string} reason Why.
  */
 function skip( reason ) {
-	process.stdout.write( `[${ SLUG }] Skipping PHPUnit: ${ reason }\n` );
-	process.exit( 0 );
+	process.stdout.write( `[${ SLUG }] Cannot run PHPUnit: ${ reason }\n` );
+	process.exit( 1 );
 }
 
 /**

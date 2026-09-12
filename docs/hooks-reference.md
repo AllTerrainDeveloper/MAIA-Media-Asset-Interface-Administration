@@ -69,7 +69,8 @@ apply_filters( 'atme_media_usage', array $rows, int $attachment_id );
 ```
 
 The seam for page builders, gallery plugins and custom-field plugins to
-report the usages only they know about. Rows feed the inspector's "Used in"
+report the usages only they know about. Rows referring to posts the current user cannot edit are removed after this
+filter. Rows feed the inspector's "Used in"
 panel, the delete guard, and the window's relations identity.
 
 ## Wizard
@@ -106,12 +107,23 @@ Register your own view name here and offer it via the JS side.
 
 The argument arrays handed to `openstation_register_window()` and
 `openstation_register_icon()`. Resize the window, swap the icon, change the
-dock placement.
+dock placement. On framework hosts the window arrays describe the framework
+renderer (`script: openstation-app-runtime`, client in `scripts`), and the
+existing filters still receive the complete registration array. Preserve those
+runtime fields when customizing visual properties. The icon remains on its
+original registration path, preserving all `atme_icon_args` options.
+
+Both framework apps also participate in OpenStation's Experimental
+`openstation_app_manifest`, `openstation_app_window_args` and
+`openstation_app_response` hooks. Use the app ids to scope customizations.
+The app's dispatch access is declared in `capabilities( 'upload_files' )`;
+a window-appearance filter is not a dispatch authorization override.
 
 ### `atme_script_config` — filter — Stable
 
 The config blob printed as `window.allTerrainMediaExplorer`. Add keys for
-your own bundle extensions; never remove the documented ones.
+your own bundle extensions; never remove the documented ones. `codecUrl` is the local encoder bundle URL
+and supports relocated content directories. See the JS reference for the shape.
 
 ### `atme_shell_function` — filter — Stable
 

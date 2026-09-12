@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1544" height="500" viewBox="0 0 1544 500">
+<title>MAIA — Your media, in good order. By AllTerrain.</title>
+<defs>
+ <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#dfd6c4" stroke-width="1"/></pattern>
+ <clipPath id="photo"><rect x="1022" y="113" width="338" height="215" rx="8"/></clipPath>
+</defs>
+<rect width="1544" height="500" fill="#f4eddd"/>
+<rect width="1544" height="500" fill="url(#grid)"/>
+<circle cx="1420" cy="56" r="185" fill="#a9b697"/>
+<circle cx="1160" cy="508" r="173" fill="#e8b994"/>
+<path d="M1410 520L1560 350" stroke="#866249" stroke-width="78" stroke-linecap="round"/>
+<rect x="96" y="48" width="254" height="39" rx="19.5" stroke="#b85735" stroke-width="1.5" fill="#f4eddd"/>
+<text x="119" y="74" font-family="DM Sans" font-size="18" font-weight="600" letter-spacing="2" fill="#a74e30">BY ALLTERRAIN</text>
+<text x="90" y="243" font-family="Fraunces" font-size="166" font-weight="900" letter-spacing="-7" fill="#302c25">MAIA<tspan fill="#bb603c">.</tspan></text>
+<path d="M99 291H140" stroke="#718967" stroke-width="5"/>
+<text x="158" y="300" font-family="Fraunces" font-size="28" font-weight="700" fill="#302c25">YOUR MEDIA, IN GOOD ORDER.</text>
+<text font-family="DM Sans" font-size="25" fill="#625e54">
+<tspan x="98" y="357">A home for every image. Folders, a beautiful viewer</tspan>
+<tspan x="98" y="392">and thoughtful tools to keep your library in shape.</tspan>
+</text>
+<text x="98" y="453" font-family="DM Sans" font-size="17" font-weight="600" letter-spacing="1.8" fill="#a74e30">MADE FOR WORDPRESS + OPENSTATION</text>
+<!-- A small stack of media cards: the AllTerrain paper motif, adapted for MAIA. -->
+<g transform="rotate(8 1190 245)"><rect x="1024" y="74" width="384" height="320" rx="14" fill="#f9f5ea" stroke="#bdb39e" stroke-width="2"/></g>
+<g transform="rotate(-7 1180 240)">
+<rect x="1004" y="91" width="374" height="310" rx="14" fill="#302c25" opacity=".13" transform="translate(6 10)"/>
+<rect x="1004" y="91" width="374" height="310" rx="14" fill="#fffcf4" stroke="#c7bca6" stroke-width="2"/>
+<g clip-path="url(#photo)">
+<rect x="1022" y="113" width="338" height="215" fill="#dbdfc6"/>
+<circle cx="1280" cy="165" r="30" fill="#bd603c"/>
+<path d="M1000 340L1127 170L1267 340Z" fill="#889c78"/>
+<path d="M1110 350L1250 211L1380 350Z" fill="#607961"/>
+<path d="M1022 290Q1120 264 1360 307V340H1022Z" fill="#b8c1a1"/>
+</g>
+<rect x="1024" y="351" width="156" height="9" rx="4.5" fill="#766b58"/>
+<rect x="1024" y="372" width="102" height="6" rx="3" fill="#d2c8b5"/>
+<circle cx="1335" cy="364" r="15" fill="#dbe2ca"/>
+<path d="M1328 364L1333 369L1342 359" fill="none" stroke="#607961" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(-9 1003 364)">
+<circle cx="1003" cy="364" r="65" fill="#b95b36"/>
+<path d="M967 339Q967 332 974 332H994L1004 343H1033Q1040 343 1040 350V385Q1040 392 1033 392H974Q967 392 967 385Z" fill="#fbf0d9"/>
+<path d="M968 352H1039" stroke="#b95b36" stroke-width="4"/>
+</g>
+</svg>

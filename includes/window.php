@@ -90,67 +90,71 @@ function atme_maybe_init_openstation() {
  * @return void
  */
 function atme_register_shell_surfaces() {
-	$registered = atme_shell_call(
-		'register_window',
-		'allterrain-media-explorer',
-		/**
-		 * Filters the native window registration.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @param array $args Window arguments as the shell expects them.
-		 */
-		apply_filters(
-			'atme_window_args',
-			array(
-				'title'        => __( 'MAIA', 'allterrain-media-explorer' ),
-				'icon'         => 'dashicons-format-gallery',
-				'template'     => 'atme_render_window_template',
-				'script'       => 'allterrain-media-explorer',
-				'style'        => 'allterrain-media-explorer',
-				'width'        => 1280,
-				'height'       => 800,
-				'min_width'    => 720,
-				'min_height'   => 480,
-				'placement'    => 'dock',
-				'capabilities' => array( 'upload_files' ),
+	// Older shells keep their native renderer; current shells register the apps.
+	if ( ! atme_has_app_framework() ) {
+		$registered = atme_shell_call(
+			'register_window',
+			'allterrain-media-explorer',
+			/**
+			 * Filters the native window registration.
+			 *
+			 * @since 0.1.0
+			 *
+			 * @param array $args Window arguments as the shell expects them.
+			 */
+			apply_filters(
+				'atme_window_args',
+				array(
+					'title'        => __( 'MAIA', 'allterrain-media-explorer' ),
+					'icon'         => 'dashicons-format-gallery',
+					'template'     => 'atme_render_window_template',
+					'script'       => 'allterrain-media-explorer',
+					'style'        => 'allterrain-media-explorer',
+					'width'        => 1280,
+					'height'       => 800,
+					'min_width'    => 720,
+					'min_height'   => 480,
+					'placement'    => 'dock',
+					'capabilities' => array( 'upload_files' ),
+				)
 			)
-		)
-	);
+		);
 
-	if ( is_wp_error( $registered ) ) {
-		return;
+		if ( is_wp_error( $registered ) ) {
+			return;
+		}
+
+		atme_shell_call(
+			'register_window',
+			'atme-viewer',
+			/**
+			 * Filters the Media Viewer window registration.
+			 *
+			 * @since 0.1.0
+			 *
+			 * @param array $args Window arguments as the shell expects them.
+			 */
+			apply_filters(
+				'atme_viewer_window_args',
+				array(
+					'title'        => __( 'MAIA Viewer', 'allterrain-media-explorer' ),
+					'icon'         => 'dashicons-visibility',
+					'template'     => 'atme_render_viewer_template',
+					'script'       => 'allterrain-media-explorer',
+					'style'        => 'allterrain-media-explorer',
+					'width'        => 1060,
+					'height'       => 720,
+					'min_width'    => 560,
+					'min_height'   => 420,
+					// No dock tile of its own: the viewer is a document window
+					// you reach through a photo, not an app you launch cold.
+					'placement'    => 'none',
+					'capabilities' => array( 'upload_files' ),
+				)
+			)
+		);
+
 	}
-
-	atme_shell_call(
-		'register_window',
-		'atme-viewer',
-		/**
-		 * Filters the Media Viewer window registration.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @param array $args Window arguments as the shell expects them.
-		 */
-		apply_filters(
-			'atme_viewer_window_args',
-			array(
-				'title'        => __( 'MAIA Viewer', 'allterrain-media-explorer' ),
-				'icon'         => 'dashicons-visibility',
-				'template'     => 'atme_render_viewer_template',
-				'script'       => 'allterrain-media-explorer',
-				'style'        => 'allterrain-media-explorer',
-				'width'        => 1060,
-				'height'       => 720,
-				'min_width'    => 560,
-				'min_height'   => 420,
-				// No dock tile of its own: the viewer is a document window
-				// you reach through a photo, not an app you launch cold.
-				'placement'    => 'none',
-				'capabilities' => array( 'upload_files' ),
-			)
-		)
-	);
 
 	if ( atme_shell_has( 'register_icon' ) ) {
 		atme_shell_call(

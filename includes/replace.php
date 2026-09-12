@@ -245,7 +245,7 @@ function atme_stash_version( $attachment_id ) {
 		return new WP_Error( 'atme_file_missing', __( 'There is no file to stash.', 'allterrain-media-explorer' ) );
 	}
 
-	$stash_name = $attachment_id . '-' . time() . '-' . basename( $current );
+	$stash_name = wp_unique_filename( $dir, $attachment_id . '-' . time() . '-' . basename( $current ) );
 
 	if ( ! copy( $current, $dir . $stash_name ) ) {
 		return new WP_Error( 'atme_stash_failed', __( 'The current file could not be stashed as a version.', 'allterrain-media-explorer' ) );

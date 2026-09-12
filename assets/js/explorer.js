@@ -54,13 +54,26 @@
     }
     return { body: await response.json(), response };
   }
+  function restEndpoint(base, path) {
+    const url = new URL(base, window.location.href);
+    const split = path.indexOf("?");
+    const route = split < 0 ? path : path.slice(0, split);
+    const query = split < 0 ? "" : path.slice(split + 1);
+    if (url.searchParams.has("rest_route")) {
+      url.searchParams.set("rest_route", url.searchParams.get("rest_route").replace(/\/$/, "") + route);
+    } else {
+      url.pathname = url.pathname.replace(/\/$/, "") + route;
+    }
+    new URLSearchParams(query).forEach((value, key) => url.searchParams.append(key, value));
+    return url.href;
+  }
   async function request(path, init = {}, silent = false) {
     const config = getConfig();
-    return (await requestUrl(config.restUrl.replace(/\/$/, "") + path, init, silent)).body;
+    return (await requestUrl(restEndpoint(config.restUrl, path), init, silent)).body;
   }
   async function wpRequest(path, init = {}, silent = false) {
     const config = getConfig();
-    return requestUrl(config.wpRestUrl.replace(/\/$/, "") + path, init, silent);
+    return requestUrl(restEndpoint(config.wpRestUrl, path), init, silent);
   }
   const MEDIA_FIELDS = [
     "id",
@@ -85,9 +98,9 @@
     if (!rendered) {
       return "";
     }
-    const div = document.createElement("div");
-    div.innerHTML = rendered;
-    return (div.textContent ?? "").trim();
+    const template = document.createElement("template");
+    template.innerHTML = rendered;
+    return (template.content.textContent ?? "").trim();
   }
   function toMediaItem(raw) {
     const sizes = raw.media_details?.sizes ?? {};
@@ -181,7 +194,7 @@
     const shell = getShell();
     const form = new FormData();
     form.append("file", file, file.name);
-    const url = `${config.restUrl.replace(/\/$/, "")}/replace/${id}`;
+    const url = restEndpoint(config.restUrl, `/replace/${id}`);
     const options = { method: "POST", credentials: "same-origin", body: form };
     if (!shell?.fetch) {
       options.headers = { "X-WP-Nonce": config.nonce };
@@ -215,6 +228,9 @@
   }
   function createFolder(name, parent = 0) {
     return request("/folders", { method: "POST", body: JSON.stringify({ name, parent }) });
+  }
+  async function deleteFolder(id) {
+    await wpRequest(`/atme-folders/${id}?force=true`, { method: "DELETE" });
   }
   function fileIntoFolder(ids, folder) {
     return request("/folders/file", { method: "POST", body: JSON.stringify({ ids, folder }) });
@@ -1563,6 +1579,29 @@
       this.tiles.clear();
     }
   }
+  async function suggestAltText(item) {
+    const shell = getShell();
+    if (!shell?.ai?.ask || !shell.confirm) {
+      return null;
+    }
+    const allowed = await shell.confirm({
+      title: "Send media details to AI?",
+      message: "The image URL, title and caption will be sent to the AI provider configured in OpenStation to draft alt text. The provider may fetch the image at that URL. Its terms and privacy policy apply.",
+      confirmLabel: "Send and draft"
+    });
+    if (!allowed) {
+      return null;
+    }
+    const answer = await shell.ai.ask(
+      `Write concise, descriptive alt text (under 15 words, no quotes, no "image of") for a WordPress media item. Its file URL is ${item.url}, its title is "${item.title}" and its caption is "${item.caption}". Reply with the alt text only.`
+    );
+    const text = typeof answer === "string" ? answer : answer?.message;
+    const alt = typeof text === "string" ? text.trim().replace(/^"|"$/g, "") : "";
+    if (!alt || alt.length > 300) {
+      throw new Error("The assistant did not return usable alt text.");
+    }
+    return alt;
+  }
   function browserEncodeSupport() {
     const canvas = document.createElement("canvas");
     canvas.width = 1;
@@ -1585,8 +1624,7 @@
       codecPromise = new Promise((resolve, reject) => {
         const config = getConfig();
         const script = document.createElement("script");
-        const base = config.restUrl.replace(/wp-json\/.*$/, "");
-        script.src = `${base}wp-content/plugins/allterrain-media-explorer/assets/js/codec.min.js?ver=${config.version}`;
+        script.src = config.codecUrl;
         script.async = true;
         script.onload = () => {
           if (window.atmeCodec) {
@@ -1595,7 +1633,11 @@
             reject(new Error("The codec bundle loaded but registered nothing."));
           }
         };
-        script.onerror = () => reject(new Error("The codec bundle could not be fetched."));
+        script.onerror = () => {
+          codecPromise = null;
+          script.remove();
+          reject(new Error("The codec bundle could not be fetched."));
+        };
         document.head.appendChild(script);
       });
     }
@@ -3186,7 +3228,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             if (!current || next === lastSaved) {
               return;
             }
-            void updateMedia(current.id, { [key]: next }).then((fresh) => {
+            void updateMedia(item.id, { [key]: next }).then((fresh) => {
               lastSaved = next;
               if (epoch === thisEpoch) {
                 current = fresh;
@@ -3210,23 +3252,16 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             className: "atme-button atme-button--small",
             onClick: () => {
               suggest.setAttribute("disabled", "");
-              void getShell().ai.ask(
-                `Write concise, descriptive alt text (under 15 words, no quotes, no "image of") for a WordPress media item. Its file URL is ${item.url}, its title is "${item.title}" and its caption is "${item.caption}". Reply with the alt text only.`
-              ).then((answer) => {
-                const text = typeof answer === "string" ? answer : String(answer?.message ?? "");
-                const alt = text.trim().replace(/^"|"$/g, "");
-                if (!alt || alt.length > 300) {
-                  getShell()?.notify?.({
-                    title: "No suggestion",
-                    body: "The assistant did not return usable alt text.",
-                    type: "error"
-                  });
+              void suggestAltText(item).then((alt) => {
+                if (!alt || epoch !== thisEpoch) {
                   return;
                 }
                 return updateMedia(item.id, { alt_text: alt }).then((fresh) => {
                   getShell()?.showToast?.({ message: "Alt text drafted — give it a read" });
                   delegate.onChanged(fresh);
-                  render(fresh);
+                  if (epoch === thisEpoch) {
+                    render(fresh);
+                  }
                 });
               }).catch(
                 (error) => getShell()?.notify?.({ title: "No suggestion", body: error.message, type: "error" })
@@ -3384,7 +3419,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       body.textContent = "";
       if (rows.length === 0) {
         body.appendChild(
-          emptyStateEl({ title: "Not used anywhere", body: "Safe to delete.", icon: "dashicons-yes-alt" })
+          emptyStateEl({ title: "No visible references found", body: "Other posts, plugins or external sites may still use this file.", icon: "dashicons-yes-alt" })
         );
         return;
       }
@@ -3452,6 +3487,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       show: render,
       showEmpty: renderEmpty,
       destroy: () => {
+        epoch += 1;
         host.textContent = "";
         current = null;
       }
@@ -3506,7 +3542,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     );
     section.appendChild(
       checkboxControl({
-        label: "Replace in place (same URL; the old file is kept as a version)",
+        label: "Replace this attachment (a new format changes its URL)",
         onChange: (checked) => {
           state.replace = checked;
         }
@@ -3549,7 +3585,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     title.textContent = "Replace file";
     section.appendChild(title);
     section.appendChild(
-      noticeEl("Swap the file, keep the URL. Every post using it shows the new one; the old file becomes a version.")
+      noticeEl("The old file becomes a version. Same-format replacements keep the URL. Changing format changes the URL; existing embedded links may need updating.")
     );
     const picker = document.createElement("input");
     picker.type = "file";
@@ -3828,7 +3864,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       return;
     }
     const attempt = (deadline) => {
-      if (pending.get(element) !== token) {
+      if (pending$1.get(element) !== token) {
         return;
       }
       const windowId = windowIdOf(element);
@@ -3845,22 +3881,22 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
           warned = true;
           console.error("[AllTerrain Media Explorer] The shell refused a window identity.", error, ref);
         }
-        pending.delete(element);
+        pending$1.delete(element);
         return;
       }
       const stuck = !ref || api.get?.(windowId)?.id === ref.id;
       if (stuck || Date.now() >= deadline) {
-        pending.delete(element);
+        pending$1.delete(element);
         return;
       }
       window.setTimeout(() => attempt(deadline), ATTACH_POLL_MS);
     };
     const token = Symbol("atf-identity");
-    pending.set(element, token);
+    pending$1.set(element, token);
     attempt(Date.now() + ATTACH_TIMEOUT_MS);
   }
   let warned = false;
-  const pending = /* @__PURE__ */ new WeakMap();
+  const pending$1 = /* @__PURE__ */ new WeakMap();
   const wanted = /* @__PURE__ */ new Map();
   function reapply() {
     for (const [element, ref] of wanted) {
@@ -3924,12 +3960,97 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     if (!shell || id <= 0) {
       return;
     }
-    window.__atmeView = id;
     shell.openWindow?.(VIEWER_WINDOW_ID, {
       source: "allterrain-media-explorer",
       params: { mediaId: id }
     });
-    shell.broadcast?.(VIEW_TOPIC, { id });
+    if (!shell.getWindowConfig?.(VIEWER_WINDOW_ID)?.osApp) {
+      shell.broadcast?.(VIEW_TOPIC, { id });
+    }
+  }
+  function createNameForm(opts) {
+    const form = document.createElement("form");
+    form.className = "atme-name-form";
+    form.setAttribute("aria-label", opts.label);
+    let value = opts.value ?? "";
+    let busy = false;
+    let disposed = false;
+    const destination = document.createElement("p");
+    destination.textContent = opts.destination;
+    const field = textControl({ label: opts.label, value, onInput: (next) => {
+      value = next;
+    } });
+    const status = document.createElement("div");
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    const focus = () => (field.shadowRoot?.querySelector("input") ?? field).focus();
+    const setBusy = (next) => {
+      busy = next;
+      form.setAttribute("aria-busy", String(next));
+      for (const control of [field, submit, cancel]) {
+        control.toggleAttribute("disabled", next);
+      }
+      submit.textContent = next ? "Saving…" : opts.submitLabel;
+    };
+    const save = async () => {
+      if (busy || disposed) {
+        return;
+      }
+      if (!value.trim()) {
+        status.textContent = "Please enter a name.";
+        focus();
+        return;
+      }
+      setBusy(true);
+      status.textContent = "Saving…";
+      try {
+        await opts.onSave(value.trim());
+        if (!disposed) {
+          opts.onClose();
+        }
+      } catch (error) {
+        if (!disposed) {
+          status.textContent = error instanceof Error ? error.message : "Could not save. Try again.";
+        }
+      } finally {
+        if (!disposed) {
+          setBusy(false);
+        }
+      }
+    };
+    const submit = buttonControl({ label: opts.submitLabel, variant: "primary", onClick: () => void save() });
+    const cancel = buttonControl({ label: "Cancel", onClick: () => {
+      if (!busy) {
+        opts.onClose();
+      }
+    } });
+    const actions = document.createElement("div");
+    actions.className = "atme-name-form__actions";
+    actions.append(submit, cancel);
+    form.append(destination, field, actions, status);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void save();
+    });
+    form.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!busy) {
+          opts.onClose();
+        }
+      } else if (event.key === "Enter" && event.composedPath().includes(field)) {
+        event.preventDefault();
+        event.stopPropagation();
+        void save();
+      }
+    });
+    return { element: form, get busy() {
+      return busy;
+    }, focus, destroy: () => {
+      disposed = true;
+      form.remove();
+    } };
   }
   const REVEAL_TOPIC = "atme.reveal";
   const SMART_VIEWS = [
@@ -3955,13 +4076,17 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     orderby: "date",
     order: "desc"
   };
-  function mountExplorer(root) {
+  function mountExplorer(root, params = {}) {
     const app = new ExplorerApp(root);
+    app.retarget(params);
     app.boot();
-    return () => app.destroy();
+    return Object.assign(() => app.destroy(), { retarget: (next) => app.retarget(next) });
   }
   class ExplorerApp {
     constructor(root) {
+      this.disposed = false;
+      this.booted = false;
+      this.target = {};
       this.teardowns = [];
       this.grid = null;
       this.inspector = null;
@@ -3981,10 +4106,32 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       this.wizardOpen = false;
       this.bulkBar = null;
       this.folderDropOffs = [];
+      this.folderSaves = /* @__PURE__ */ new Map();
+      this.filingStatusEl = null;
+      this.deletingFolders = /* @__PURE__ */ new Set();
+      this.nameForm = null;
+      this.nameFormKind = "folder";
       this.root = root;
+    }
+    /** Targets this instance, including requests received while components load. */
+    retarget(params) {
+      this.target = params;
+      if (!this.booted || this.disposed) {
+        return;
+      }
+      const id = Number(params.mediaId ?? 0);
+      if (Number.isSafeInteger(id) && id > 0) {
+        void this.revealItem(id);
+      }
+      if (params.wizard === true) {
+        this.openWizard();
+      }
     }
     async boot() {
       await ensureComponents().catch(() => false);
+      if (this.disposed) {
+        return;
+      }
       const loading = this.root.querySelector("[data-atme-loading]");
       const frame = this.root.querySelector("[data-atme-frame]");
       const sidebar = this.root.querySelector("[data-atme-sidebar]");
@@ -4003,6 +4150,13 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       const gridHost = document.createElement("div");
       gridHost.className = "atme-gridhost";
       main.appendChild(gridHost);
+      const filingStatus = document.createElement("div");
+      filingStatus.className = "atme-filing-status";
+      filingStatus.setAttribute("role", "status");
+      filingStatus.setAttribute("aria-live", "polite");
+      filingStatus.setAttribute("aria-atomic", "true");
+      main.appendChild(filingStatus);
+      this.filingStatusEl = filingStatus;
       const status = document.createElement("div");
       status.className = "atme-status";
       main.appendChild(status);
@@ -4059,16 +4213,8 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       if (shell?.subscribe) {
         this.teardowns.push(shell.subscribe("atme.wizard", () => this.openWizard()));
       }
-      const pendingReveal = window.__atmeReveal;
-      if (pendingReveal) {
-        delete window.__atmeReveal;
-        void this.revealItem(pendingReveal);
-      }
-      const pendingWizard = window.__atmeWizard;
-      if (pendingWizard) {
-        delete window.__atmeWizard;
-        this.openWizard();
-      }
+      this.booted = true;
+      this.retarget(this.target);
       await Promise.all([this.runQuery(), this.refreshFolders(), this.refreshCollections()]);
     }
     /**
@@ -4138,16 +4284,11 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             return;
           }
           if (this.query.folder > 0) {
-            void fileIntoFolder(ids, this.query.folder).then(() => {
-              getShell()?.showToast?.({
-                message: `Filed ${ids.length} item${ids.length === 1 ? "" : "s"}`
-              });
-              void this.runQuery();
-              void this.refreshFolders();
-            });
+            return this.saveToFolder(ids, this.query.folder);
           } else {
             void this.revealItem(ids[0]);
           }
+          return;
         }
       });
       this.teardowns.push(off);
@@ -4265,9 +4406,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     }
     paintSidebar() {
       const sidebar = this.sidebarEl;
-      if (!sidebar) {
+      if (!sidebar || this.disposed) {
         return;
       }
+      const restoreNameFocus = !!this.nameForm?.element.contains(document.activeElement);
       for (const off of this.folderDropOffs.splice(0)) {
         off();
       }
@@ -4317,6 +4459,8 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             },
             folder.count
           );
+          row.dataset.folderId = String(folder.id);
+          this.paintFolderSave(row, folder.id);
           row.style.paddingInlineStart = `${8 + depth * 16}px`;
           foldersGroup.appendChild(row);
           this.folderDropOffs.push(
@@ -4324,6 +4468,9 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
               id: `allterrain-media-explorer/folder-${folder.id}`,
               element: row,
               accept: (payload) => {
+                if (this.deletingFolders.has(folder.id)) {
+                  return false;
+                }
                 if (payload.type === "shortcut" || payload.type === "desktop-file") {
                   return entitiesIn(payload).some((entity) => entity.kind === "attachment");
                 }
@@ -4338,15 +4485,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
                 if (ids.length === 0) {
                   return;
                 }
-                void fileIntoFolder(ids, folder.id).then(() => {
-                  getShell()?.showToast?.({
-                    message: `Filed ${ids.length} item${ids.length === 1 ? "" : "s"} into ${folder.name}`
-                  });
-                  void this.refreshFolders();
-                  if (this.query.folder > 0 || this.query.view === "unfiled") {
-                    void this.runQuery();
-                  }
-                });
+                return this.saveToFolder(ids, folder.id);
               }
             })
           );
@@ -4355,14 +4494,30 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       };
       paintLevel(roots, 0);
       const newFolder = buttonControl({
-        label: "+ New folder",
+        label: "+ New top-level folder",
         className: "atme-side__row",
         onClick: () => {
-          void this.promptNewFolder();
+          this.showNewFolder();
         }
       });
       newFolder.classList.add("atme-side__new");
       foldersGroup.appendChild(newFolder);
+      const selectedFolder = this.folders.find((folder) => folder.id === this.query.folder);
+      if (selectedFolder) {
+        foldersGroup.appendChild(buttonControl({
+          label: "+ New subfolder",
+          className: "atme-side__row atme-side__new",
+          onClick: () => this.showNewFolder(selectedFolder.id)
+        }));
+        foldersGroup.appendChild(buttonControl({
+          label: "Delete folder…",
+          className: "atme-side__row atme-side__new",
+          onClick: () => void this.promptDeleteFolder(selectedFolder)
+        }));
+      }
+      if (this.nameForm && this.nameFormKind === "folder") {
+        foldersGroup.appendChild(this.nameForm.element);
+      }
       sidebar.appendChild(foldersGroup);
       const collectionsGroup = document.createElement("div");
       collectionsGroup.className = "atme-side__group";
@@ -4388,8 +4543,6 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
               confirmLabel: "Remove",
               danger: true
             }).then((yes) => yes && remove());
-          } else {
-            remove();
           }
         });
         collectionsGroup.appendChild(row);
@@ -4398,11 +4551,14 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         label: "+ Save current view",
         className: "atme-side__row",
         onClick: () => {
-          void this.promptSaveCollection();
+          this.showSaveCollection();
         }
       });
       saveCollection.classList.add("atme-side__new");
       collectionsGroup.appendChild(saveCollection);
+      if (this.nameForm && this.nameFormKind === "collection") {
+        collectionsGroup.appendChild(this.nameForm.element);
+      }
       sidebar.appendChild(collectionsGroup);
       const toolsGroup = document.createElement("div");
       toolsGroup.className = "atme-side__group";
@@ -4414,42 +4570,198 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         this.sideRow("Optimization Wizard", "dashicons-superhero", this.wizardOpen, () => this.openWizard())
       );
       sidebar.appendChild(toolsGroup);
+      if (restoreNameFocus) {
+        this.nameForm?.focus();
+      }
     }
-    async promptNewFolder() {
-      const name = window.prompt("Folder name");
-      if (!name || !name.trim()) {
+    /** Paints pending writes without replacing a focused row or its drop target. */
+    paintFolderSave(row, folderId) {
+      const deleting = this.deletingFolders.has(folderId);
+      const saving = deleting || (this.folderSaves.get(folderId) ?? 0) > 0;
+      row.classList.toggle("is-saving", saving);
+      row.setAttribute("aria-busy", String(saving));
+      row.querySelector(".atme-side__saving")?.remove();
+      if (saving) {
+        const label = document.createElement("span");
+        label.className = "atme-side__saving";
+        label.textContent = deleting ? "Deleting…" : "Saving…";
+        row.appendChild(label);
+      }
+    }
+    /** Keeps feedback visible until the write and refreshed folder contents settle. */
+    async saveToFolder(ids, folderId) {
+      if (this.disposed || this.deletingFolders.has(folderId)) {
         return;
       }
+      const name = this.folders.find((folder) => folder.id === folderId)?.name ?? "folder";
+      const items = `${ids.length} item${ids.length === 1 ? "" : "s"}`;
+      const paint = () => {
+        this.sidebarEl?.querySelectorAll(`[data-folder-id="${folderId}"]`).forEach((row) => this.paintFolderSave(row, folderId));
+      };
+      const announce = (message, failed = false) => {
+        if (this.filingStatusEl) {
+          this.filingStatusEl.textContent = message;
+          this.filingStatusEl.classList.toggle("is-error", failed);
+        }
+      };
+      this.folderSaves.set(folderId, (this.folderSaves.get(folderId) ?? 0) + 1);
+      paint();
+      announce(`Saving ${items} into ${name}…`);
       try {
-        const created = await createFolder(name.trim(), this.query.folder);
-        await this.refreshFolders();
-        this.query.folder = created.id;
-        this.query.view = "";
+        await fileIntoFolder(ids, folderId);
+        if (this.disposed) {
+          return;
+        }
+        await Promise.all([
+          this.refreshFolders(),
+          ...this.query.folder > 0 || this.query.view === "unfiled" ? [this.runQuery()] : []
+        ]);
+        if (this.disposed) {
+          return;
+        }
+        const message = `Filed ${items} into ${name}.`;
+        announce(message);
+        getShell()?.showToast?.({ message });
+      } catch (error) {
+        if (this.disposed) {
+          return;
+        }
+        const message = `Could not file ${items} into ${name}. Try again.`;
+        announce(message, true);
+        getShell()?.notify?.({
+          title: message,
+          body: error instanceof Error ? error.message : "",
+          type: "error"
+        });
+      } finally {
+        const remaining = (this.folderSaves.get(folderId) ?? 1) - 1;
+        if (remaining > 0) {
+          this.folderSaves.set(folderId, remaining);
+        } else {
+          this.folderSaves.delete(folderId);
+        }
+        if (!this.disposed) {
+          paint();
+        }
+      }
+    }
+    /** Opens one persistent inline form; repainting the tree keeps its draft. */
+    showNameForm(kind, opts) {
+      if (this.disposed) {
+        return;
+      }
+      if (this.nameForm?.busy) {
+        this.nameForm.focus();
+        return;
+      }
+      this.nameForm?.destroy();
+      this.nameFormKind = kind;
+      this.nameForm = createNameForm({ ...opts, onClose: () => {
+        this.nameForm?.destroy();
+        this.nameForm = null;
         this.paintSidebar();
-        await this.runQuery();
-      } catch (error) {
-        getShell()?.notify?.({
-          title: "Could not create the folder",
-          body: error instanceof Error ? error.message : "",
-          type: "error"
-        });
-      }
+        this.sidebarEl?.querySelector(".atme-side__row.is-active")?.focus();
+      } });
+      this.paintSidebar();
+      this.nameForm.focus();
     }
-    async promptSaveCollection() {
-      const title = window.prompt("Collection name", this.query.search || "My collection");
-      if (!title || !title.trim()) {
+    showNewFolder(parent = 0) {
+      if (this.deletingFolders.has(parent)) {
         return;
       }
-      try {
-        await createCollection(title.trim(), { ...this.query });
-        await this.refreshCollections();
-      } catch (error) {
-        getShell()?.notify?.({
-          title: "Could not save the collection",
-          body: error instanceof Error ? error.message : "",
-          type: "error"
-        });
+      const parentName = this.folders.find((folder) => folder.id === parent)?.name;
+      this.showNameForm("folder", {
+        label: "Folder name",
+        destination: parent ? `Inside “${parentName}”` : "At the top level",
+        submitLabel: "Create folder",
+        onSave: async (name) => {
+          const created = await createFolder(name, parent);
+          if (this.disposed) {
+            return;
+          }
+          await this.refreshFolders();
+          if (this.disposed) {
+            return;
+          }
+          this.leaveWizard();
+          this.query.folder = created.id;
+          this.query.view = "";
+          this.paintSidebar();
+          await this.runQuery();
+        }
+      });
+    }
+    /** Deletes the folder label, never its attachments or child folders. */
+    async promptDeleteFolder(folder) {
+      if (this.disposed || this.deletingFolders.has(folder.id)) {
+        return;
       }
+      const shell = getShell();
+      const message = `Delete “${folder.name}”? Media files will stay in the library. Subfolders will move up one level.`;
+      const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete folder", message, confirmLabel: "Delete folder", danger: true }) : false;
+      if (!confirmed || this.disposed || this.deletingFolders.has(folder.id)) {
+        return;
+      }
+      if (this.folderSaves.has(folder.id)) {
+        shell?.notify?.({ title: "This folder is still saving. Try deleting it when saving finishes." });
+        return;
+      }
+      this.deletingFolders.add(folder.id);
+      if (this.filingStatusEl) {
+        this.filingStatusEl.textContent = `Deleting “${folder.name}”…`;
+        this.filingStatusEl.classList.remove("is-error");
+      }
+      this.paintSidebar();
+      try {
+        await deleteFolder(folder.id);
+        if (this.disposed) {
+          return;
+        }
+        this.folders = this.folders.filter((item) => item.id !== folder.id).map((item) => item.parent === folder.id ? { ...item, parent: folder.parent } : item);
+        if (this.query.folder === folder.id) {
+          this.query.folder = folder.parent;
+          this.query.view = "";
+        }
+        await this.refreshFolders();
+        if (this.disposed) {
+          return;
+        }
+        await this.runQuery();
+        if (!this.disposed && this.filingStatusEl) {
+          this.filingStatusEl.textContent = `Deleted “${folder.name}”. Media files were kept.`;
+          this.filingStatusEl.classList.remove("is-error");
+        }
+      } catch (error) {
+        if (!this.disposed) {
+          if (this.filingStatusEl) {
+            this.filingStatusEl.textContent = `Could not delete “${folder.name}”. Try again.`;
+            this.filingStatusEl.classList.add("is-error");
+          }
+          shell?.notify?.({
+            title: "Could not delete the folder",
+            body: error instanceof Error ? error.message : "",
+            type: "error"
+          });
+        }
+      } finally {
+        this.deletingFolders.delete(folder.id);
+        this.paintSidebar();
+      }
+    }
+    showSaveCollection() {
+      const query = { ...this.query };
+      this.showNameForm("collection", {
+        label: "Collection name",
+        destination: "Save this library view",
+        value: query.search || "My collection",
+        submitLabel: "Save collection",
+        onSave: async (title) => {
+          await createCollection(title, query);
+          if (!this.disposed) {
+            await this.refreshCollections();
+          }
+        }
+      });
     }
     async refreshCollections() {
       try {
@@ -4560,7 +4872,6 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       try {
         this.folders = await fetchFolders();
       } catch {
-        this.folders = [];
       }
       this.paintSidebar();
     }
@@ -4769,10 +5080,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             onChange: (value) => {
               const folder = Number(value);
               if (folder > 0) {
-                void fileIntoFolder(ids, folder).then(() => {
-                  getShell()?.showToast?.({ message: `Filed ${ids.length} items` });
-                  void this.refreshFolders();
-                });
+                void this.saveToFolder(ids, folder);
               }
             }
           })
@@ -4813,10 +5121,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     async bulkDelete(ids) {
       const shell = getShell();
       const message = `Delete ${ids.length} items permanently? There is no trash for media, and anything using them will be left empty.`;
-      const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete media", message, confirmLabel: "Delete all", danger: true }) : (
-        // eslint-disable-next-line no-alert
-        window.confirm(message)
-      );
+      const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete media", message, confirmLabel: "Delete all", danger: true }) : false;
       if (!confirmed) {
         return;
       }
@@ -4854,6 +5159,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       this.statusEl.textContent = parts.join(" · ");
     }
     destroy() {
+      this.disposed = true;
+      this.queryEpoch++;
+      this.nameForm?.destroy();
+      this.nameForm = null;
       for (const teardown of this.teardowns.splice(0)) {
         teardown();
       }
@@ -4876,10 +5185,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     const shell = getShell();
     const usage = await fetchUsage(item.id).catch(() => []);
     const message = usage.length > 0 ? `“${item.title || item.id}” is used in ${usage.length} place${usage.length === 1 ? "" : "s"}: ${usage.slice(0, 3).map((row) => row.title).join(", ")}${usage.length > 3 ? "…" : ""}. Deleting it will leave those spots empty.` : `Delete “${item.title || item.id}” permanently? There is no trash for media.`;
-    const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete media", message, confirmLabel: "Delete", danger: true }) : (
-      // eslint-disable-next-line no-alert
-      window.confirm(message)
-    );
+    const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete media", message, confirmLabel: "Delete", danger: true }) : false;
     if (!confirmed) {
       return false;
     }
@@ -4902,12 +5208,13 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
   function mountViewer(root, params = {}) {
     const app = new ViewerApp(root);
     const teardowns = [() => app.destroy()];
-    const parked = window.__atmeView;
-    const initial = Number(params.mediaId ?? parked ?? 0);
-    delete window.__atmeView;
-    if (initial > 0) {
-      void app.show(initial);
-    }
+    const retarget = (next) => {
+      const id = Number(next.mediaId ?? 0);
+      if (Number.isSafeInteger(id) && id > 0) {
+        void app.show(id);
+      }
+    };
+    retarget(params);
     const shell = getShell();
     if (shell?.subscribe) {
       teardowns.push(
@@ -4926,11 +5233,11 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         }
       })
     );
-    return () => {
+    return Object.assign(() => {
       for (const teardown of teardowns.splice(0)) {
         teardown();
       }
-    };
+    }, { retarget });
   }
   class ViewerApp {
     constructor(root) {
@@ -5178,9 +5485,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
           const shell = getShell();
           const id = this.item?.id ?? 0;
           if (id > 0) {
-            window.__atmeReveal = id;
-            shell?.openWindow?.("allterrain-media-explorer", { source: "atme-viewer" });
-            shell?.broadcast?.("atme.reveal", { id });
+            shell?.openWindow?.("allterrain-media-explorer", { source: "atme-viewer", params: { mediaId: id } });
+            if (!shell?.getWindowConfig?.("allterrain-media-explorer")?.osApp) {
+              shell?.broadcast?.("atme.reveal", { id });
+            }
           }
         }
       });
@@ -5362,6 +5670,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       window.addEventListener("keydown", this.keyHandler, true);
     }
     destroy() {
+      this.epoch++;
       if (this.keyHandler) {
         window.removeEventListener("keydown", this.keyHandler, true);
         this.keyHandler = null;
@@ -5373,23 +5682,26 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     }
   }
   const MOUNTED = "atmeMounted";
-  function mountOnce(root) {
+  function mountOnce(root, params = {}) {
     if (root.dataset[MOUNTED] === "1") {
       return () => void 0;
     }
     root.dataset[MOUNTED] = "1";
-    const teardown = mountExplorer(root);
+    const teardown = mountExplorer(root, params);
     return () => {
       delete root.dataset[MOUNTED];
       teardown();
     };
   }
   function registerNativeWindow() {
+    if (getShell()?.getWindowConfig?.("allterrain-media-explorer")?.osApp) {
+      return;
+    }
     const w2 = window;
     w2.openStationNativeWindows = w2.openStationNativeWindows ?? {};
-    w2.openStationNativeWindows["allterrain-media-explorer"] = (body) => {
+    w2.openStationNativeWindows["allterrain-media-explorer"] = (body, ctx) => {
       const root = body.querySelector("[data-atme-root]") ?? body;
-      return mountOnce(root);
+      return mountOnce(root, ctx?.params);
     };
     w2.openStationNativeWindows["atme-viewer"] = (body, ctx) => {
       const root = body.querySelector("[data-atme-viewer-root]") ?? body;
@@ -5397,4 +5709,42 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     };
   }
   registerNativeWindow();
+  const pending = window;
+  (pending.openStationAppsPending ?? (pending.openStationAppsPending = [])).push(({ defineApp, html }) => {
+    for (const id of ["allterrain-media-explorer", "atme-viewer"]) {
+      const ui = (ctx) => ctx.ui(() => ({
+        app: null,
+        revision: -1
+      }));
+      defineApp(id, {
+        placeholder: () => ({}),
+        // The media canvas owns its children; same-template renders keep them.
+        view: () => html`<div class="atme-app-host" os-preserve></div>`,
+        mounted: (ctx) => {
+          const host = ctx.root.querySelector(".atme-app-host");
+          const params = ctx.loading ? {} : ctx.state;
+          if (id === "atme-viewer") {
+            host.classList.add("atme-viewer");
+            ui(ctx).app = mountViewer(host, params);
+          } else {
+            host.classList.add("atme");
+            host.innerHTML = '<div class="atme__frame" data-atme-frame><aside class="atme__sidebar" data-atme-sidebar></aside><main class="atme__main" data-atme-main></main><aside class="atme__inspector" data-atme-inspector hidden></aside></div>';
+            ui(ctx).app = mountExplorer(host, params);
+          }
+          ui(ctx).revision = ctx.loading ? -1 : ctx.state.revision;
+          return () => {
+            ui(ctx).app?.();
+            ui(ctx).app = null;
+          };
+        },
+        updated: (ctx) => {
+          const local = ui(ctx);
+          if (!ctx.loading && local.app && local.revision !== ctx.state.revision) {
+            local.revision = ctx.state.revision;
+            local.app.retarget(ctx.state);
+          }
+        }
+      });
+    }
+  });
 })();

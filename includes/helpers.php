@@ -125,3 +125,32 @@ function atme_regenerate_thumbnails( $attachment_id ) {
 
 	return true;
 }
+
+/**
+ * Gates attachment operations on the particular attachment, for REST and abilities.
+ *
+ * @param array|WP_REST_Request $input Input containing an id.
+ * @return bool Whether this user can edit this attachment.
+ */
+function atme_can_edit_media( $input ) {
+	$id = isset( $input['id'] ) && is_scalar( $input['id'] ) ? absint( $input['id'] ) : 0;
+	return atme_can_upload() && $id && 'attachment' === get_post_type( $id ) && current_user_can( 'edit_post', $id );
+}
+
+/**
+ * Checks the entire selection before any batch mutation starts.
+ *
+ * @param array|WP_REST_Request $input Input containing ids.
+ * @return bool Whether every attachment is editable.
+ */
+function atme_can_edit_media_batch( $input ) {
+	if ( ! atme_can_upload() || empty( $input['ids'] ) || ! is_array( $input['ids'] ) ) {
+		return false;
+	}
+	foreach ( $input['ids'] as $id ) {
+		if ( ! atme_can_edit_media( array( 'id' => $id ) ) ) {
+			return false;
+		}
+	}
+	return true;
+}

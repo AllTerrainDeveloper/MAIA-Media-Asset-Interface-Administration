@@ -39,7 +39,7 @@ function atme_register_rest_routes() {
 		array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => 'atme_rest_convert',
-			'permission_callback' => 'atme_can_upload',
+			'permission_callback' => 'atme_can_edit_media',
 			'args'                => array(
 				'id'         => $id_arg,
 				'format'     => array(
@@ -84,7 +84,7 @@ function atme_register_rest_routes() {
 		array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => 'atme_rest_replace',
-			'permission_callback' => 'atme_can_upload',
+			'permission_callback' => 'atme_can_edit_media',
 			'args'                => array( 'id' => $id_arg ),
 		)
 	);
@@ -96,13 +96,13 @@ function atme_register_rest_routes() {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => 'atme_rest_versions',
-				'permission_callback' => 'atme_can_upload',
+				'permission_callback' => 'atme_can_edit_media',
 				'args'                => array( 'id' => $id_arg ),
 			),
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => 'atme_rest_rollback',
-				'permission_callback' => 'atme_can_upload',
+				'permission_callback' => 'atme_can_edit_media',
 				'args'                => array(
 					'id'   => $id_arg,
 					'file' => array(
@@ -121,7 +121,7 @@ function atme_register_rest_routes() {
 		array(
 			'methods'             => WP_REST_Server::READABLE,
 			'callback'            => 'atme_rest_usage',
-			'permission_callback' => 'atme_can_upload',
+			'permission_callback' => 'atme_can_edit_media',
 			'args'                => array( 'id' => $id_arg ),
 		)
 	);
@@ -132,7 +132,7 @@ function atme_register_rest_routes() {
 		array(
 			'methods'             => WP_REST_Server::READABLE,
 			'callback'            => 'atme_rest_facts',
-			'permission_callback' => 'atme_can_upload',
+			'permission_callback' => 'atme_can_edit_media',
 			'args'                => array( 'id' => $id_arg ),
 		)
 	);
@@ -143,7 +143,7 @@ function atme_register_rest_routes() {
 		array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => 'atme_rest_regenerate',
-			'permission_callback' => 'atme_can_upload',
+			'permission_callback' => 'atme_can_edit_media',
 			'args'                => array( 'id' => $id_arg ),
 		)
 	);
@@ -202,7 +202,7 @@ function atme_register_rest_routes() {
 		array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => 'atme_rest_file_into_folder',
-			'permission_callback' => 'atme_can_upload',
+			'permission_callback' => 'atme_can_edit_media_batch',
 			'args'                => $file_args,
 		)
 	);
@@ -213,7 +213,7 @@ function atme_register_rest_routes() {
 		array(
 			'methods'             => WP_REST_Server::CREATABLE,
 			'callback'            => 'atme_rest_unfile_from_folder',
-			'permission_callback' => 'atme_can_upload',
+			'permission_callback' => 'atme_can_edit_media_batch',
 			'args'                => $file_args,
 		)
 	);
@@ -349,6 +349,10 @@ function atme_rest_replace( $request ) {
 		);
 	}
 
+	if ( (int) $files['file']['size'] > wp_max_upload_size() ) {
+		return new WP_Error( 'atme_upload_too_large', __( 'The replacement exceeds this site’s upload limit.', 'allterrain-media-explorer' ), array( 'status' => 400 ) );
+	}
+
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 
 	$handled = wp_handle_upload( $files['file'], array( 'test_form' => false ) );
@@ -437,7 +441,7 @@ function atme_rest_facts( $request ) {
 	return rest_ensure_response(
 		array(
 			'facts'         => atme_file_facts( $id ),
-			'versions'      => count( (array) get_post_meta( $id, ATME_META_VERSIONS, true ) ),
+			'versions'      => count( atme_versions_of( $id ) ),
 			'convertedFrom' => (int) get_post_meta( $id, ATME_META_CONVERTED_FROM, true ),
 			'conversions'   => array_map( 'intval', (array) get_post_meta( $id, ATME_META_CONVERSIONS, true ) ),
 		)

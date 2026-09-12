@@ -22,9 +22,10 @@
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ships } from './ships.mjs';
+import { checkDirectoryAssets } from './directory-assets.mjs';
 
 const root = resolve( dirname( fileURLToPath( import.meta.url ) ), '..' );
 const slug = 'allterrain-media-explorer';
@@ -70,11 +71,15 @@ function checkVersions() {
 	const readme = /^Stable tag:\s*(.+)$/m.exec( readFileSync( join( root, 'readme.txt' ), 'utf8' ) );
 	const pkg = JSON.parse( readFileSync( join( root, 'package.json' ), 'utf8' ) ).version;
 
+	const lock = JSON.parse( readFileSync( join( root, 'package-lock.json' ), 'utf8' ) );
+
 	const found = {
 		'plugin header': header,
 		ATME_VERSION: constant ? constant[ 1 ] : '(not found)',
 		'readme.txt Stable tag': readme ? readme[ 1 ].trim() : '(not found)',
 		'package.json': pkg,
+		'package-lock.json': lock.version,
+		'package-lock.json root package': lock.packages?.[ '' ]?.version,
 	};
 
 	const disagreeing = Object.entries( found ).filter( ( [ , value ] ) => value !== header );
@@ -109,6 +114,7 @@ if ( ! existsSync( join( root, 'assets/css/allterrain-media-explorer.css' ) ) ) 
 }
 
 const version = checkVersions();
+checkDirectoryAssets( root );
 
 rmSync( dist, { recursive: true, force: true } );
 mkdirSync( stage, { recursive: true } );
@@ -137,7 +143,10 @@ for ( const entry of readdirSync( root, { withFileTypes: true } ) ) {
 		continue;
 	}
 
-	cpSync( join( root, entry.name ), join( stage, entry.name ), { recursive: true } );
+	cpSync( join( root, entry.name ), join( stage, entry.name ), {
+		recursive: true,
+		filter: ( path ) => ! basename( path ).startsWith( '.' ),
+	} );
 }
 
 count( stage );

@@ -11,6 +11,11 @@
  * @group allterrain-media-explorer
  */
 class Tests_ATME_Wizard_And_Rest extends WP_UnitTestCase {
+	public function set_up() {
+		parent::set_up();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+	}
+
 
 	/**
 	 * Makes a real JPEG attachment.
