@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1544" height="500" viewBox="0 0 1544 500">
-<title>MAIA — Your media, in good order. By AllTerrain.</title>
+<title>MAIA — Your media, in good order. By AllTerrainDeveloper.</title>
 <defs>
  <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#dfd6c4" stroke-width="1"/></pattern>
  <clipPath id="photo"><rect x="1022" y="113" width="338" height="215" rx="8"/></clipPath>
@@ -9,8 +9,8 @@
 <circle cx="1420" cy="56" r="185" fill="#a9b697"/>
 <circle cx="1160" cy="508" r="173" fill="#e8b994"/>
 <path d="M1410 520L1560 350" stroke="#866249" stroke-width="78" stroke-linecap="round"/>
-<rect x="96" y="48" width="254" height="39" rx="19.5" stroke="#b85735" stroke-width="1.5" fill="#f4eddd"/>
-<text x="119" y="74" font-family="DM Sans" font-size="18" font-weight="600" letter-spacing="2" fill="#a74e30">BY ALLTERRAIN</text>
+<rect x="96" y="48" width="360" height="39" rx="19.5" stroke="#b85735" stroke-width="1.5" fill="#f4eddd"/>
+<text x="119" y="74" font-family="DM Sans" font-size="18" font-weight="600" letter-spacing="2" fill="#a74e30">BY ALLTERRAINDEVELOPER</text>
 <text x="90" y="243" font-family="Fraunces" font-size="166" font-weight="900" letter-spacing="-7" fill="#302c25">MAIA<tspan fill="#bb603c">.</tspan></text>
 <path d="M99 291H140" stroke="#718967" stroke-width="5"/>
 <text x="158" y="300" font-family="Fraunces" font-size="28" font-weight="700" fill="#302c25">YOUR MEDIA, IN GOOD ORDER.</text>

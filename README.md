@@ -1,4 +1,4 @@
-![MAIA — Your media, in good order. By AllTerrain.](.wordpress-org/banner-1544x500.png)
+![MAIA — Your media, in good order. By AllTerrainDeveloper.](.wordpress-org/banner-1544x500.png)
 
 # MAIA
 
@@ -20,7 +20,7 @@ MAIA brings folders, a dedicated image viewer and practical media tools to the
 WordPress library is already there: organize it, inspect it, convert an image or
 restore a previous version without leaving your workspace.
 
-Made by **AllTerrain**, alongside [AllTerrain Forms](https://wordpress.org/plugins/allterrain-forms/)
+Made by **AllTerrainDeveloper**, alongside [AllTerrain Forms](https://wordpress.org/plugins/allterrain-forms/)
 and [AllTerrain Photo Editor](https://wordpress.org/plugins/allterrain-photo-editor/).
 Free software, with no license keys or author-operated cloud service.
 
