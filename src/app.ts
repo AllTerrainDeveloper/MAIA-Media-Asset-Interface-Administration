@@ -13,6 +13,7 @@ import {
 	createCollection,
 	createFolder,
 	deleteCollection,
+	deleteFolder,
 	deleteMedia,
 	fetchCollections,
 	fetchDuplicates,
@@ -38,6 +39,7 @@ import { getDragManager } from './dnd';
 import { buttonControl, ensureComponents, selectControl, textControl } from './os-ui';
 import { libraryIdentity, setIdentity } from './relations';
 import { openViewer } from './view-open';
+import { createNameForm, type NameForm } from './name-form';
 
 export type Teardown = () => void;
 
@@ -109,6 +111,9 @@ class ExplorerApp {
 	private folderDropOffs: Array< () => void > = [];
 	private readonly folderSaves = new Map< number, number >();
 	private filingStatusEl: HTMLElement | null = null;
+	private readonly deletingFolders = new Set< number >();
+	private nameForm: NameForm | null = null;
+	private nameFormKind: 'folder' | 'collection' = 'folder';
 
 	constructor( root: HTMLElement ) {
 		this.root = root;
@@ -488,6 +493,8 @@ class ExplorerApp {
 			return;
 		}
 
+		const restoreNameFocus = !! this.nameForm?.element.contains( document.activeElement );
+
 		// Folder rows re-render, so yesterday's drop targets die with them.
 		for ( const off of this.folderDropOffs.splice( 0 ) ) {
 			off();
@@ -564,6 +571,9 @@ class ExplorerApp {
 						id: `allterrain-media-explorer/folder-${ folder.id }`,
 						element: row,
 						accept: ( payload: DragPayload ) => {
+							if ( this.deletingFolders.has( folder.id ) ) {
+								return false;
+							}
 							if ( payload.type === 'shortcut' || payload.type === 'desktop-file' ) {
 								return entitiesIn( payload ).some( ( entity ) => entity.kind === 'attachment' );
 							}
@@ -597,16 +607,34 @@ class ExplorerApp {
 		paintLevel( roots, 0 );
 
 		const newFolder = buttonControl( {
-			label: '+ New folder',
+			label: '+ New top-level folder',
 			className: 'atme-side__row',
 			onClick: () => {
-				void this.promptNewFolder();
+				this.showNewFolder();
 			},
 		} );
 
 		newFolder.classList.add( 'atme-side__new' );
 		foldersGroup.appendChild( newFolder );
 
+		const selectedFolder = this.folders.find( ( folder ) => folder.id === this.query.folder );
+
+		if ( selectedFolder ) {
+			foldersGroup.appendChild( buttonControl( {
+				label: '+ New subfolder',
+				className: 'atme-side__row atme-side__new',
+				onClick: () => this.showNewFolder( selectedFolder.id ),
+			} ) );
+			foldersGroup.appendChild( buttonControl( {
+				label: 'Delete folder…',
+				className: 'atme-side__row atme-side__new',
+				onClick: () => void this.promptDeleteFolder( selectedFolder ),
+			} ) );
+		}
+
+		if ( this.nameForm && this.nameFormKind === 'folder' ) {
+			foldersGroup.appendChild( this.nameForm.element );
+		}
 		sidebar.appendChild( foldersGroup );
 
 		/* Collections ---------------------------------------------------- */
@@ -645,8 +673,6 @@ class ExplorerApp {
 							danger: true,
 						} )
 						.then( ( yes ) => yes && remove() );
-				} else {
-					remove();
 				}
 			} );
 
@@ -657,13 +683,16 @@ class ExplorerApp {
 			label: '+ Save current view',
 			className: 'atme-side__row',
 			onClick: () => {
-				void this.promptSaveCollection();
+				this.showSaveCollection();
 			},
 		} );
 
 		saveCollection.classList.add( 'atme-side__new' );
 		collectionsGroup.appendChild( saveCollection );
 
+		if ( this.nameForm && this.nameFormKind === 'collection' ) {
+			collectionsGroup.appendChild( this.nameForm.element );
+		}
 		sidebar.appendChild( collectionsGroup );
 
 		/* Tools ----------------------------------------------------------- */
@@ -682,11 +711,13 @@ class ExplorerApp {
 		);
 
 		sidebar.appendChild( toolsGroup );
+		if ( restoreNameFocus ) { this.nameForm?.focus(); }
 	}
 
 	/** Paints pending writes without replacing a focused row or its drop target. */
 	private paintFolderSave( row: HTMLElement, folderId: number ): void {
-		const saving = ( this.folderSaves.get( folderId ) ?? 0 ) > 0;
+		const deleting = this.deletingFolders.has( folderId );
+		const saving = deleting || ( this.folderSaves.get( folderId ) ?? 0 ) > 0;
 
 		row.classList.toggle( 'is-saving', saving );
 		row.setAttribute( 'aria-busy', String( saving ) );
@@ -695,14 +726,14 @@ class ExplorerApp {
 			const label = document.createElement( 'span' );
 
 			label.className = 'atme-side__saving';
-			label.textContent = 'Saving…';
+			label.textContent = deleting ? 'Deleting…' : 'Saving…';
 			row.appendChild( label );
 		}
 	}
 
 	/** Keeps feedback visible until the write and refreshed folder contents settle. */
 	private async saveToFolder( ids: number[], folderId: number ): Promise< void > {
-		if ( this.disposed ) {
+		if ( this.disposed || this.deletingFolders.has( folderId ) ) {
 			return;
 		}
 		const name = this.folders.find( ( folder ) => folder.id === folderId )?.name ?? 'folder';
@@ -763,49 +794,118 @@ class ExplorerApp {
 		}
 	}
 
-	private async promptNewFolder(): Promise< void > {
-		// eslint-disable-next-line no-alert
-		const name = window.prompt( 'Folder name' );
+	/** Opens one persistent inline form; repainting the tree keeps its draft. */
+	private showNameForm( kind: 'folder' | 'collection', opts: Omit< Parameters< typeof createNameForm >[ 0 ], 'onClose' > ): void {
+		if ( this.disposed ) { return; }
+		if ( this.nameForm?.busy ) { this.nameForm.focus(); return; }
+		this.nameForm?.destroy();
+		this.nameFormKind = kind;
+		this.nameForm = createNameForm( { ...opts, onClose: () => {
+			this.nameForm?.destroy();
+			this.nameForm = null;
+			this.paintSidebar();
+			this.sidebarEl?.querySelector< HTMLElement >( '.atme-side__row.is-active' )?.focus();
+		} } );
+		this.paintSidebar();
+		this.nameForm.focus();
+	}
 
-		if ( ! name || ! name.trim() ) {
+	private showNewFolder( parent = 0 ): void {
+		if ( this.deletingFolders.has( parent ) ) { return; }
+		const parentName = this.folders.find( ( folder ) => folder.id === parent )?.name;
+		this.showNameForm( 'folder', {
+			label: 'Folder name',
+			destination: parent ? `Inside “${ parentName }”` : 'At the top level',
+			submitLabel: 'Create folder',
+			onSave: async ( name ) => {
+				const created = await createFolder( name, parent );
+				if ( this.disposed ) { return; }
+				await this.refreshFolders();
+				if ( this.disposed ) { return; }
+				this.leaveWizard();
+				this.query.folder = created.id;
+				this.query.view = '';
+				this.paintSidebar();
+				await this.runQuery();
+			},
+		} );
+	}
+
+	/** Deletes the folder label, never its attachments or child folders. */
+	private async promptDeleteFolder( folder: Folder ): Promise< void > {
+		if ( this.disposed || this.deletingFolders.has( folder.id ) ) {
 			return;
 		}
+		const shell = getShell();
+		const message = `Delete “${ folder.name }”? Media files will stay in the library. Subfolders will move up one level.`;
+		const confirmed = shell?.confirm
+			? await shell.confirm( { title: 'Delete folder', message, confirmLabel: 'Delete folder', danger: true } )
+			: false;
 
+		if ( ! confirmed || this.disposed || this.deletingFolders.has( folder.id ) ) {
+			return;
+		}
+		if ( this.folderSaves.has( folder.id ) ) {
+			shell?.notify?.( { title: 'This folder is still saving. Try deleting it when saving finishes.' } );
+			return;
+		}
+		this.deletingFolders.add( folder.id );
+		if ( this.filingStatusEl ) {
+			this.filingStatusEl.textContent = `Deleting “${ folder.name }”…`;
+			this.filingStatusEl.classList.remove( 'is-error' );
+		}
+		this.paintSidebar();
 		try {
-			const created = await createFolder( name.trim(), this.query.folder );
-
+			await deleteFolder( folder.id );
+			if ( this.disposed ) {
+				return;
+			}
+			// Keep the local tree coherent even if the follow-up read fails.
+			this.folders = this.folders.filter( ( item ) => item.id !== folder.id )
+				.map( ( item ) => item.parent === folder.id ? { ...item, parent: folder.parent } : item );
+			if ( this.query.folder === folder.id ) {
+				this.query.folder = folder.parent;
+				this.query.view = '';
+			}
 			await this.refreshFolders();
-			this.query.folder = created.id;
-			this.query.view = '';
-			this.paintSidebar();
+			if ( this.disposed ) {
+				return;
+			}
 			await this.runQuery();
+			if ( ! this.disposed && this.filingStatusEl ) {
+				this.filingStatusEl.textContent = `Deleted “${ folder.name }”. Media files were kept.`;
+				this.filingStatusEl.classList.remove( 'is-error' );
+			}
 		} catch ( error ) {
-			getShell()?.notify?.( {
-				title: 'Could not create the folder',
-				body: error instanceof Error ? error.message : '',
-				type: 'error',
-			} );
+			if ( ! this.disposed ) {
+				if ( this.filingStatusEl ) {
+					this.filingStatusEl.textContent = `Could not delete “${ folder.name }”. Try again.`;
+					this.filingStatusEl.classList.add( 'is-error' );
+				}
+				shell?.notify?.( {
+					title: 'Could not delete the folder',
+					body: error instanceof Error ? error.message : '',
+					type: 'error',
+				} );
+			}
+		} finally {
+			this.deletingFolders.delete( folder.id );
+			this.paintSidebar();
 		}
 	}
 
-	private async promptSaveCollection(): Promise< void > {
-		// eslint-disable-next-line no-alert
-		const title = window.prompt( 'Collection name', this.query.search || 'My collection' );
-
-		if ( ! title || ! title.trim() ) {
-			return;
-		}
-
-		try {
-			await createCollection( title.trim(), { ...this.query } );
-			await this.refreshCollections();
-		} catch ( error ) {
-			getShell()?.notify?.( {
-				title: 'Could not save the collection',
-				body: error instanceof Error ? error.message : '',
-				type: 'error',
-			} );
-		}
+	private showSaveCollection(): void {
+		const query = { ...this.query };
+		this.showNameForm( 'collection', {
+			label: 'Collection name',
+			destination: 'Save this library view',
+			value: query.search || 'My collection',
+			submitLabel: 'Save collection',
+			onSave: async ( title ) => {
+				await createCollection( title, query );
+				if ( ! this.disposed ) { await this.refreshCollections(); }
+			},
+		} );
 	}
 
 	private async refreshCollections(): Promise< void > {
@@ -954,7 +1054,7 @@ class ExplorerApp {
 		try {
 			this.folders = await fetchFolders();
 		} catch {
-			this.folders = [];
+			// Keep the last known tree when a background refresh fails.
 		}
 
 		this.paintSidebar();
@@ -1270,8 +1370,7 @@ class ExplorerApp {
 
 		const confirmed = shell?.confirm
 			? await shell.confirm( { title: 'Delete media', message, confirmLabel: 'Delete all', danger: true } )
-			: // eslint-disable-next-line no-alert
-			  window.confirm( message );
+			: false;
 
 		if ( ! confirmed ) {
 			return;
@@ -1325,6 +1424,8 @@ class ExplorerApp {
 	public destroy(): void {
 		this.disposed = true;
 		this.queryEpoch++;
+		this.nameForm?.destroy();
+		this.nameForm = null;
 		for ( const teardown of this.teardowns.splice( 0 ) ) {
 			teardown();
 		}
@@ -1361,8 +1462,7 @@ export async function confirmAndDelete( item: MediaItem ): Promise< boolean > {
 
 	const confirmed = shell?.confirm
 		? await shell.confirm( { title: 'Delete media', message, confirmLabel: 'Delete', danger: true } )
-		: // eslint-disable-next-line no-alert
-		  window.confirm( message );
+		: false;
 
 	if ( ! confirmed ) {
 		return false;

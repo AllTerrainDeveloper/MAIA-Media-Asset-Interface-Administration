@@ -2,17 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DropTarget, Folder } from '../../src/types';
 
 const mocks = vi.hoisted( () => ( {
-	file: vi.fn(), folders: vi.fn(), media: vi.fn(), toast: vi.fn(), notify: vi.fn(),
+	create: vi.fn(), delete: vi.fn(), confirm: vi.fn(), file: vi.fn(), folders: vi.fn(), media: vi.fn(), toast: vi.fn(), notify: vi.fn(),
 	targets: new Map< string, DropTarget >(),
 } ) );
 vi.mock( '../../src/api', async ( original ) => ( {
 	...await original< typeof import('../../src/api') >(),
 	fileIntoFolder: mocks.file,
+	createFolder: mocks.create,
+	deleteFolder: mocks.delete,
 	fetchFolders: mocks.folders,
 	fetchMedia: mocks.media,
 	fetchCollections: vi.fn().mockResolvedValue( [] ),
 	getConfig: () => ( { canUpload: false } ),
-	getShell: () => ( { showToast: mocks.toast, notify: mocks.notify } ),
+	getShell: () => ( { showToast: mocks.toast, notify: mocks.notify, confirm: mocks.confirm } ),
 	onMediaChanged: () => () => undefined,
 } ) );
 vi.mock( '../../src/dnd', () => ( { getDragManager: () => ( {
@@ -53,6 +55,7 @@ function drop( target = 'folder-7', ids = [ 42 ] ) {
 beforeEach( async () => {
 	vi.clearAllMocks(); mocks.targets.clear();
 	mocks.file.mockReset(); mocks.folders.mockReset();
+	mocks.create.mockReset(); mocks.delete.mockReset(); mocks.confirm.mockReset();
 	mocks.folders.mockResolvedValue( [ folder ] );
 	mocks.media.mockResolvedValue( { items: [], total: 0, totalPages: 1 } );
 	root = document.createElement( 'div' );
@@ -61,7 +64,7 @@ beforeEach( async () => {
 	off = mountExplorer( root );
 	await vi.waitFor( () => expect( row() ).not.toBeNull() );
 } );
-afterEach( () => { off(); root.remove(); } );
+afterEach( () => { off(); root.remove(); if ( vi.isMockFunction( window.prompt ) ) { vi.mocked( window.prompt ).mockRestore(); } } );
 
 describe( 'folder filing feedback', () => {
 	it( 'shows pending feedback immediately and keeps it through navigation and the refresh', async () => {
@@ -147,5 +150,129 @@ describe( 'folder filing feedback', () => {
 		expect( mocks.folders ).toHaveBeenCalledOnce();
 		expect( mocks.toast ).not.toHaveBeenCalled();
 		expect( mocks.notify ).not.toHaveBeenCalled();
+	} );
+} );
+
+function clickAction( text: string ) {
+	const button = Array.from( root.querySelectorAll< HTMLButtonElement >( 'button' ) )
+		.find( ( item ) => item.textContent === text );
+	expect( button ).toBeDefined();
+	button!.click();
+}
+
+function fillName( value: string ) {
+	const input = root.querySelector< HTMLInputElement >( '.atme-name-form input' )!;
+	input.value = value;
+	input.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+}
+
+describe( 'folder management', () => {
+	it( 'creates a top-level folder even while Products is selected', async () => {
+		row().click();
+		mocks.create.mockResolvedValue( { id: 8 } );
+		mocks.folders.mockResolvedValue( [ folder, { id: 8, name: 'Campaigns', parent: 0, count: 0 } ] );
+		clickAction( '+ New top-level folder' );
+		expect( root.querySelector( '.atme-name-form' )?.textContent ).toContain( 'At the top level' );
+		fillName( '  Campaigns  ' );
+		clickAction( 'Create folder' );
+		await vi.waitFor( () => expect( mocks.create ).toHaveBeenCalledWith( 'Campaigns', 0 ) );
+		await vi.waitFor( () => expect( root.querySelector( '[data-folder-id="8"]' )?.classList.contains( 'is-active' ) ).toBe( true ) );
+	} );
+
+	it( 'creates children only through the explicit subfolder action', async () => {
+		row().click();
+		mocks.create.mockResolvedValue( { id: 9 } );
+		clickAction( '+ New subfolder' );
+		expect( root.querySelector( '.atme-name-form' )?.textContent ).toContain( 'Inside “Products”' );
+		fillName( 'Summer' );
+		clickAction( 'Create folder' );
+		await vi.waitFor( () => expect( mocks.create ).toHaveBeenCalledWith( 'Summer', 7 ) );
+	} );
+
+	it( 'validates inline and cancels without any browser dialog', () => {
+		const prompt = vi.spyOn( window, 'prompt' );
+		clickAction( '+ New top-level folder' );
+		fillName( '   ' );
+		clickAction( 'Create folder' );
+		expect( root.querySelector( '.atme-name-form [role="status"]' )?.textContent ).toBe( 'Please enter a name.' );
+		clickAction( 'Cancel' );
+		expect( root.querySelector( '.atme-name-form' ) ).toBeNull();
+		expect( mocks.create ).not.toHaveBeenCalled();
+		expect( prompt ).not.toHaveBeenCalled();
+	} );
+
+	it( 'keeps the draft through sidebar navigation and retries inline after a server error', async () => {
+		clickAction( '+ New top-level folder' );
+		fillName( 'Campaigns' );
+		row().click();
+		expect( root.querySelector< HTMLInputElement >( '.atme-name-form input' )?.value ).toBe( 'Campaigns' );
+		const save = deferred< { id: number } >();
+		mocks.create.mockReturnValueOnce( save.promise ).mockResolvedValueOnce( { id: 8 } );
+		clickAction( 'Create folder' );
+		expect( root.querySelector( '.atme-name-form' )?.getAttribute( 'aria-busy' ) ).toBe( 'true' );
+		clickAction( 'Saving…' );
+		expect( mocks.create ).toHaveBeenCalledOnce();
+		save.reject( new Error( 'Folder already exists' ) );
+		await vi.waitFor( () => expect( root.querySelector( '.atme-name-form [role="status"]' )?.textContent ).toBe( 'Folder already exists' ) );
+		fillName( 'Campaigns 2' );
+		clickAction( 'Create folder' );
+		await vi.waitFor( () => expect( root.querySelector( '.atme-name-form' ) ).toBeNull() );
+		expect( mocks.create ).toHaveBeenLastCalledWith( 'Campaigns 2', 0 );
+	} );
+
+	it( 'explains deletion and sends no delete after cancellation', async () => {
+		row().click();
+		mocks.confirm.mockResolvedValue( false );
+		clickAction( 'Delete folder…' );
+		await Promise.resolve();
+		expect( mocks.confirm ).toHaveBeenCalledWith( expect.objectContaining( {
+			message: 'Delete “Products”? Media files will stay in the library. Subfolders will move up one level.',
+		} ) );
+		expect( mocks.delete ).not.toHaveBeenCalled();
+		expect( row() ).not.toBeNull();
+	} );
+
+	it( 'shows deletion progress, removes the row and returns to the parent', async () => {
+		row().click();
+		const removal = deferred< void >();
+		mocks.confirm.mockResolvedValue( true );
+		mocks.delete.mockReturnValue( removal.promise );
+		mocks.folders.mockResolvedValue( [ { id: 9, name: 'Summer', parent: 0, count: 1 } ] );
+		clickAction( 'Delete folder…' );
+		await vi.waitFor( () => expect( mocks.delete ).toHaveBeenCalledWith( 7 ) );
+		expect( row().textContent ).toContain( 'Deleting…' );
+		expect( row().getAttribute( 'aria-busy' ) ).toBe( 'true' );
+		expect( status().textContent ).toBe( 'Deleting “Products”…' );
+		removal.resolve();
+		await vi.waitFor( () => expect( row() ).toBeNull() );
+		expect( root.querySelector( '[data-folder-id="9"]' ) ).not.toBeNull();
+		await vi.waitFor( () => expect( status().textContent ).toContain( 'Media files were kept.' ) );
+		expect( mocks.media ).toHaveBeenLastCalledWith( expect.objectContaining( { folder: 0 } ), 1 );
+	} );
+
+	it( 'keeps the folder after a failed deletion and allows retry', async () => {
+		row().click();
+		mocks.confirm.mockResolvedValue( true );
+		mocks.delete.mockRejectedValueOnce( new Error( 'Permission denied' ) ).mockResolvedValueOnce( undefined );
+		clickAction( 'Delete folder…' );
+		await vi.waitFor( () => expect( status().textContent ).toContain( 'Could not delete' ) );
+		expect( row().getAttribute( 'aria-busy' ) ).toBe( 'false' );
+		mocks.folders.mockResolvedValue( [] );
+		clickAction( 'Delete folder…' );
+		await vi.waitFor( () => expect( row() ).toBeNull() );
+		expect( mocks.delete ).toHaveBeenCalledTimes( 2 );
+	} );
+
+	it( 'does not delete while a drop is still saving', async () => {
+		row().click();
+		const save = deferred< { filed: number } >();
+		mocks.file.mockReturnValue( save.promise );
+		const done = drop();
+		mocks.confirm.mockResolvedValue( true );
+		clickAction( 'Delete folder…' );
+		await vi.waitFor( () => expect( mocks.notify ).toHaveBeenCalled() );
+		expect( mocks.delete ).not.toHaveBeenCalled();
+		save.resolve( { filed: 1 } );
+		await done;
 	} );
 } );

@@ -131,6 +131,65 @@ class Tests_ATME_Usage_And_Folders extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::atme_register_content_model
+	 */
+	public function test_folder_rest_deletion_keeps_media_and_promotes_children() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$parent     = atme_create_folder( 'Parent' );
+		$folder     = atme_create_folder( 'Products', $parent );
+		$child      = atme_create_folder( 'Summer', $folder );
+		$other      = atme_create_folder( 'Other' );
+		$attachment = self::factory()->attachment->create();
+		atme_file_into_folder( array( $attachment ), $folder );
+		atme_file_into_folder( array( $attachment ), $other );
+		atme_file_into_folder( array( $attachment ), $child );
+
+		$request = new WP_REST_Request( 'DELETE', '/wp/v2/atme-folders/' . $folder );
+		$request->set_param( 'force', true );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertTrue( $response->get_data()['deleted'] );
+		$this->assertNull( term_exists( $folder, ATME_FOLDER_TAX ) );
+		$this->assertSame( $parent, (int) get_term( $child, ATME_FOLDER_TAX )->parent );
+		$this->assertSame( 'attachment', get_post_type( $attachment ) );
+		$this->assertEqualSets( array( $other, $child ), wp_get_object_terms( $attachment, ATME_FOLDER_TAX, array( 'fields' => 'ids' ) ) );
+	}
+
+	/**
+	 * @covers ::atme_register_content_model
+	 */
+	public function test_folder_rest_deletion_requires_taxonomy_permission_and_a_live_folder() {
+		$folder = atme_create_folder( 'Products' );
+		$request = new WP_REST_Request( 'DELETE', '/wp/v2/atme-folders/' . $folder );
+		$request->set_param( 'force', true );
+		wp_set_current_user( 0 );
+		$this->assertSame( 401, rest_do_request( $request )->get_status() );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( 403, rest_do_request( $request )->get_status() );
+		$this->assertNotNull( term_exists( $folder, ATME_FOLDER_TAX ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+		$this->assertSame( 404, rest_do_request( $request )->get_status() );
+	}
+
+	/**
+	 * @covers ::atme_rest_create_folder
+	 */
+	public function test_rest_creation_distinguishes_top_level_and_child_folders() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$products = atme_create_folder( 'Products' );
+		foreach ( array( 0, $products ) as $parent ) {
+			$request = new WP_REST_Request( 'POST', '/atme/v1/folders' );
+			$request->set_param( 'name', $parent ? 'Summer' : 'Campaigns' );
+			$request->set_param( 'parent', $parent );
+			$response = rest_do_request( $request );
+			$this->assertSame( 200, $response->get_status() );
+			$this->assertSame( $parent, (int) get_term( $response->get_data()['id'], ATME_FOLDER_TAX )->parent );
+		}
+	}
+
+	/**
 	 * @covers ::atme_rest_attachment_query
 	 */
 	public function test_the_missing_alt_view_narrows_the_query() {

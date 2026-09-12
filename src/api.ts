@@ -469,6 +469,11 @@ export function createFolder( name: string, parent = 0 ): Promise< { id: number 
 	return request( '/folders', { method: 'POST', body: JSON.stringify( { name, parent } ) } );
 }
 
+/** Deletes only the term; WordPress preserves media and reparents child folders. */
+export async function deleteFolder( id: number ): Promise< void > {
+	await wpRequest( `/atme-folders/${ id }?force=true`, { method: 'DELETE' } );
+}
+
 /** Files items into a folder, additively. */
 export function fileIntoFolder( ids: number[], folder: number ): Promise< { filed: number } > {
 	return request( '/folders/file', { method: 'POST', body: JSON.stringify( { ids, folder } ) } );

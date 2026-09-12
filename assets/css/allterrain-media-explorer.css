@@ -153,6 +153,44 @@
 	}
 }
 
+.atme-name-form {
+	display: grid;
+	gap: 8px;
+	margin-block-start: 8px;
+	padding: 8px;
+	border: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	border-radius: 6px;
+	background: var( --os-ui-surface-elevated, rgba( 128, 128, 128, 0.08 ) );
+}
+
+.atme-name-form p {
+	margin: 0;
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+
+.atme-name-form input,
+.atme-name-form os-text-field {
+	min-inline-size: 0;
+	inline-size: 100%;
+}
+
+.atme-name-form__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.atme-name-form [role="status"] {
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+
+.atme-side__group > os-button {
+	display: block;
+	margin-block-start: 4px;
+}
+
 /* Main column ------------------------------------------------------------ */
 
 .atme__main {

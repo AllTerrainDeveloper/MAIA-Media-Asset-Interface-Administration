@@ -229,6 +229,9 @@
   function createFolder(name, parent = 0) {
     return request("/folders", { method: "POST", body: JSON.stringify({ name, parent }) });
   }
+  async function deleteFolder(id) {
+    await wpRequest(`/atme-folders/${id}?force=true`, { method: "DELETE" });
+  }
   function fileIntoFolder(ids, folder) {
     return request("/folders/file", { method: "POST", body: JSON.stringify({ ids, folder }) });
   }
@@ -3965,6 +3968,90 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       shell.broadcast?.(VIEW_TOPIC, { id });
     }
   }
+  function createNameForm(opts) {
+    const form = document.createElement("form");
+    form.className = "atme-name-form";
+    form.setAttribute("aria-label", opts.label);
+    let value = opts.value ?? "";
+    let busy = false;
+    let disposed = false;
+    const destination = document.createElement("p");
+    destination.textContent = opts.destination;
+    const field = textControl({ label: opts.label, value, onInput: (next) => {
+      value = next;
+    } });
+    const status = document.createElement("div");
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    const focus = () => (field.shadowRoot?.querySelector("input") ?? field).focus();
+    const setBusy = (next) => {
+      busy = next;
+      form.setAttribute("aria-busy", String(next));
+      for (const control of [field, submit, cancel]) {
+        control.toggleAttribute("disabled", next);
+      }
+      submit.textContent = next ? "Saving…" : opts.submitLabel;
+    };
+    const save = async () => {
+      if (busy || disposed) {
+        return;
+      }
+      if (!value.trim()) {
+        status.textContent = "Please enter a name.";
+        focus();
+        return;
+      }
+      setBusy(true);
+      status.textContent = "Saving…";
+      try {
+        await opts.onSave(value.trim());
+        if (!disposed) {
+          opts.onClose();
+        }
+      } catch (error) {
+        if (!disposed) {
+          status.textContent = error instanceof Error ? error.message : "Could not save. Try again.";
+        }
+      } finally {
+        if (!disposed) {
+          setBusy(false);
+        }
+      }
+    };
+    const submit = buttonControl({ label: opts.submitLabel, variant: "primary", onClick: () => void save() });
+    const cancel = buttonControl({ label: "Cancel", onClick: () => {
+      if (!busy) {
+        opts.onClose();
+      }
+    } });
+    const actions = document.createElement("div");
+    actions.className = "atme-name-form__actions";
+    actions.append(submit, cancel);
+    form.append(destination, field, actions, status);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void save();
+    });
+    form.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!busy) {
+          opts.onClose();
+        }
+      } else if (event.key === "Enter" && event.composedPath().includes(field)) {
+        event.preventDefault();
+        event.stopPropagation();
+        void save();
+      }
+    });
+    return { element: form, get busy() {
+      return busy;
+    }, focus, destroy: () => {
+      disposed = true;
+      form.remove();
+    } };
+  }
   const REVEAL_TOPIC = "atme.reveal";
   const SMART_VIEWS = [
     { slug: "", label: "All media", icon: "dashicons-format-gallery" },
@@ -4021,6 +4108,9 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       this.folderDropOffs = [];
       this.folderSaves = /* @__PURE__ */ new Map();
       this.filingStatusEl = null;
+      this.deletingFolders = /* @__PURE__ */ new Set();
+      this.nameForm = null;
+      this.nameFormKind = "folder";
       this.root = root;
     }
     /** Targets this instance, including requests received while components load. */
@@ -4319,6 +4409,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       if (!sidebar || this.disposed) {
         return;
       }
+      const restoreNameFocus = !!this.nameForm?.element.contains(document.activeElement);
       for (const off of this.folderDropOffs.splice(0)) {
         off();
       }
@@ -4377,6 +4468,9 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
               id: `allterrain-media-explorer/folder-${folder.id}`,
               element: row,
               accept: (payload) => {
+                if (this.deletingFolders.has(folder.id)) {
+                  return false;
+                }
                 if (payload.type === "shortcut" || payload.type === "desktop-file") {
                   return entitiesIn(payload).some((entity) => entity.kind === "attachment");
                 }
@@ -4400,14 +4494,30 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       };
       paintLevel(roots, 0);
       const newFolder = buttonControl({
-        label: "+ New folder",
+        label: "+ New top-level folder",
         className: "atme-side__row",
         onClick: () => {
-          void this.promptNewFolder();
+          this.showNewFolder();
         }
       });
       newFolder.classList.add("atme-side__new");
       foldersGroup.appendChild(newFolder);
+      const selectedFolder = this.folders.find((folder) => folder.id === this.query.folder);
+      if (selectedFolder) {
+        foldersGroup.appendChild(buttonControl({
+          label: "+ New subfolder",
+          className: "atme-side__row atme-side__new",
+          onClick: () => this.showNewFolder(selectedFolder.id)
+        }));
+        foldersGroup.appendChild(buttonControl({
+          label: "Delete folder…",
+          className: "atme-side__row atme-side__new",
+          onClick: () => void this.promptDeleteFolder(selectedFolder)
+        }));
+      }
+      if (this.nameForm && this.nameFormKind === "folder") {
+        foldersGroup.appendChild(this.nameForm.element);
+      }
       sidebar.appendChild(foldersGroup);
       const collectionsGroup = document.createElement("div");
       collectionsGroup.className = "atme-side__group";
@@ -4433,8 +4543,6 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
               confirmLabel: "Remove",
               danger: true
             }).then((yes) => yes && remove());
-          } else {
-            remove();
           }
         });
         collectionsGroup.appendChild(row);
@@ -4443,11 +4551,14 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         label: "+ Save current view",
         className: "atme-side__row",
         onClick: () => {
-          void this.promptSaveCollection();
+          this.showSaveCollection();
         }
       });
       saveCollection.classList.add("atme-side__new");
       collectionsGroup.appendChild(saveCollection);
+      if (this.nameForm && this.nameFormKind === "collection") {
+        collectionsGroup.appendChild(this.nameForm.element);
+      }
       sidebar.appendChild(collectionsGroup);
       const toolsGroup = document.createElement("div");
       toolsGroup.className = "atme-side__group";
@@ -4459,23 +4570,27 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         this.sideRow("Optimization Wizard", "dashicons-superhero", this.wizardOpen, () => this.openWizard())
       );
       sidebar.appendChild(toolsGroup);
+      if (restoreNameFocus) {
+        this.nameForm?.focus();
+      }
     }
     /** Paints pending writes without replacing a focused row or its drop target. */
     paintFolderSave(row, folderId) {
-      const saving = (this.folderSaves.get(folderId) ?? 0) > 0;
+      const deleting = this.deletingFolders.has(folderId);
+      const saving = deleting || (this.folderSaves.get(folderId) ?? 0) > 0;
       row.classList.toggle("is-saving", saving);
       row.setAttribute("aria-busy", String(saving));
       row.querySelector(".atme-side__saving")?.remove();
       if (saving) {
         const label = document.createElement("span");
         label.className = "atme-side__saving";
-        label.textContent = "Saving…";
+        label.textContent = deleting ? "Deleting…" : "Saving…";
         row.appendChild(label);
       }
     }
     /** Keeps feedback visible until the write and refreshed folder contents settle. */
     async saveToFolder(ids, folderId) {
-      if (this.disposed) {
+      if (this.disposed || this.deletingFolders.has(folderId)) {
         return;
       }
       const name = this.folders.find((folder) => folder.id === folderId)?.name ?? "folder";
@@ -4530,41 +4645,123 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         }
       }
     }
-    async promptNewFolder() {
-      const name = window.prompt("Folder name");
-      if (!name || !name.trim()) {
+    /** Opens one persistent inline form; repainting the tree keeps its draft. */
+    showNameForm(kind, opts) {
+      if (this.disposed) {
         return;
       }
-      try {
-        const created = await createFolder(name.trim(), this.query.folder);
-        await this.refreshFolders();
-        this.query.folder = created.id;
-        this.query.view = "";
+      if (this.nameForm?.busy) {
+        this.nameForm.focus();
+        return;
+      }
+      this.nameForm?.destroy();
+      this.nameFormKind = kind;
+      this.nameForm = createNameForm({ ...opts, onClose: () => {
+        this.nameForm?.destroy();
+        this.nameForm = null;
         this.paintSidebar();
+        this.sidebarEl?.querySelector(".atme-side__row.is-active")?.focus();
+      } });
+      this.paintSidebar();
+      this.nameForm.focus();
+    }
+    showNewFolder(parent = 0) {
+      if (this.deletingFolders.has(parent)) {
+        return;
+      }
+      const parentName = this.folders.find((folder) => folder.id === parent)?.name;
+      this.showNameForm("folder", {
+        label: "Folder name",
+        destination: parent ? `Inside “${parentName}”` : "At the top level",
+        submitLabel: "Create folder",
+        onSave: async (name) => {
+          const created = await createFolder(name, parent);
+          if (this.disposed) {
+            return;
+          }
+          await this.refreshFolders();
+          if (this.disposed) {
+            return;
+          }
+          this.leaveWizard();
+          this.query.folder = created.id;
+          this.query.view = "";
+          this.paintSidebar();
+          await this.runQuery();
+        }
+      });
+    }
+    /** Deletes the folder label, never its attachments or child folders. */
+    async promptDeleteFolder(folder) {
+      if (this.disposed || this.deletingFolders.has(folder.id)) {
+        return;
+      }
+      const shell = getShell();
+      const message = `Delete “${folder.name}”? Media files will stay in the library. Subfolders will move up one level.`;
+      const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete folder", message, confirmLabel: "Delete folder", danger: true }) : false;
+      if (!confirmed || this.disposed || this.deletingFolders.has(folder.id)) {
+        return;
+      }
+      if (this.folderSaves.has(folder.id)) {
+        shell?.notify?.({ title: "This folder is still saving. Try deleting it when saving finishes." });
+        return;
+      }
+      this.deletingFolders.add(folder.id);
+      if (this.filingStatusEl) {
+        this.filingStatusEl.textContent = `Deleting “${folder.name}”…`;
+        this.filingStatusEl.classList.remove("is-error");
+      }
+      this.paintSidebar();
+      try {
+        await deleteFolder(folder.id);
+        if (this.disposed) {
+          return;
+        }
+        this.folders = this.folders.filter((item) => item.id !== folder.id).map((item) => item.parent === folder.id ? { ...item, parent: folder.parent } : item);
+        if (this.query.folder === folder.id) {
+          this.query.folder = folder.parent;
+          this.query.view = "";
+        }
+        await this.refreshFolders();
+        if (this.disposed) {
+          return;
+        }
         await this.runQuery();
+        if (!this.disposed && this.filingStatusEl) {
+          this.filingStatusEl.textContent = `Deleted “${folder.name}”. Media files were kept.`;
+          this.filingStatusEl.classList.remove("is-error");
+        }
       } catch (error) {
-        getShell()?.notify?.({
-          title: "Could not create the folder",
-          body: error instanceof Error ? error.message : "",
-          type: "error"
-        });
+        if (!this.disposed) {
+          if (this.filingStatusEl) {
+            this.filingStatusEl.textContent = `Could not delete “${folder.name}”. Try again.`;
+            this.filingStatusEl.classList.add("is-error");
+          }
+          shell?.notify?.({
+            title: "Could not delete the folder",
+            body: error instanceof Error ? error.message : "",
+            type: "error"
+          });
+        }
+      } finally {
+        this.deletingFolders.delete(folder.id);
+        this.paintSidebar();
       }
     }
-    async promptSaveCollection() {
-      const title = window.prompt("Collection name", this.query.search || "My collection");
-      if (!title || !title.trim()) {
-        return;
-      }
-      try {
-        await createCollection(title.trim(), { ...this.query });
-        await this.refreshCollections();
-      } catch (error) {
-        getShell()?.notify?.({
-          title: "Could not save the collection",
-          body: error instanceof Error ? error.message : "",
-          type: "error"
-        });
-      }
+    showSaveCollection() {
+      const query = { ...this.query };
+      this.showNameForm("collection", {
+        label: "Collection name",
+        destination: "Save this library view",
+        value: query.search || "My collection",
+        submitLabel: "Save collection",
+        onSave: async (title) => {
+          await createCollection(title, query);
+          if (!this.disposed) {
+            await this.refreshCollections();
+          }
+        }
+      });
     }
     async refreshCollections() {
       try {
@@ -4675,7 +4872,6 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       try {
         this.folders = await fetchFolders();
       } catch {
-        this.folders = [];
       }
       this.paintSidebar();
     }
@@ -4925,10 +5121,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     async bulkDelete(ids) {
       const shell = getShell();
       const message = `Delete ${ids.length} items permanently? There is no trash for media, and anything using them will be left empty.`;
-      const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete media", message, confirmLabel: "Delete all", danger: true }) : (
-        // eslint-disable-next-line no-alert
-        window.confirm(message)
-      );
+      const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete media", message, confirmLabel: "Delete all", danger: true }) : false;
       if (!confirmed) {
         return;
       }
@@ -4968,6 +5161,8 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     destroy() {
       this.disposed = true;
       this.queryEpoch++;
+      this.nameForm?.destroy();
+      this.nameForm = null;
       for (const teardown of this.teardowns.splice(0)) {
         teardown();
       }
@@ -4990,10 +5185,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     const shell = getShell();
     const usage = await fetchUsage(item.id).catch(() => []);
     const message = usage.length > 0 ? `“${item.title || item.id}” is used in ${usage.length} place${usage.length === 1 ? "" : "s"}: ${usage.slice(0, 3).map((row) => row.title).join(", ")}${usage.length > 3 ? "…" : ""}. Deleting it will leave those spots empty.` : `Delete “${item.title || item.id}” permanently? There is no trash for media.`;
-    const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete media", message, confirmLabel: "Delete", danger: true }) : (
-      // eslint-disable-next-line no-alert
-      window.confirm(message)
-    );
+    const confirmed = shell?.confirm ? await shell.confirm({ title: "Delete media", message, confirmLabel: "Delete", danger: true }) : false;
     if (!confirmed) {
       return false;
     }

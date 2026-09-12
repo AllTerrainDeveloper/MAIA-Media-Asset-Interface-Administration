@@ -10,7 +10,7 @@ Part of the AllTerrain family.**
 [![PHP 7.4+](https://img.shields.io/badge/PHP-7.4%2B-777bb4)](https://php.net)
 [![Requires OpenStation](https://img.shields.io/badge/requires-OpenStation-c1622f)](https://github.com/WordPress/openstation)
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-57%20PHP%20%2B%2085%20JS-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-60%20PHP%20%2B%2099%20JS-brightgreen)](#testing)
 
 ![The MAIA library window on the OpenStation desktop](.github/screenshots/library.png)
 
@@ -36,6 +36,12 @@ Explorer emits, so every existing drop target accepts it with zero new
 code.
 
 ## A look around
+
+**Folders.** “New top-level folder” creates a folder beside Products or any
+other root, even when a folder is selected. Select a folder for “New subfolder”
+or “Delete folder…”. Naming happens inline with OpenStation controls and the
+destination shown before saving. Deleting a folder keeps its media in the
+library and moves its subfolders up one level.
 
 **The viewer.** Double-click anything — a grid tile, a file on the wallpaper
 — and the photo opens full bleed: wheel/pinch zoom with panning, fit/1:1,

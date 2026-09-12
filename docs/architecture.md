@@ -121,3 +121,20 @@ Pending counts are keyed by folder id, so sidebar repaint and overlapping
 drops do not clear feedback prematurely. Failed writes show an error and allow
 another attempt; folder counts are only refreshed from the server. Closing
 the window suppresses late UI updates without cancelling the server write.
+
+## Folder and collection management
+
+“New top-level folder” always uses parent `0`. “New subfolder” captures the
+selected folder id. Both use the same inline OpenStation naming form as saved
+collections, with a visible destination, draft retention across sidebar
+repaint, keyboard submit/cancel, pending state, and inline errors. No browser
+native prompt, confirm, or alert is used, including fallbacks.
+
+Deletion uses WordPress's existing `DELETE /wp/v2/atme-folders/{id}?force=true`
+route and taxonomy permissions (`delete_terms`, mapped to `upload_files`).
+The OpenStation confirmation explains that attachments remain and children
+move to the deleted folder's parent. WordPress removes only the term and its
+relationships. The client returns to the parent when the selected folder is
+deleted; failed requests retain the row for retry. Pending writes block
+folder deletion in that window, and deleting folders reject new filing.
+No destructive action proceeds without the shell confirmation API.
