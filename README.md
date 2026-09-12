@@ -4,6 +4,8 @@
 
 # MAIA
 
+*Media Asset Interface & Administration*
+
 **A home for every image. Built for WordPress and OpenStation.**
 
 [![WordPress 6.0+](https://img.shields.io/badge/WordPress-6.0%2B-21759b)](https://wordpress.org)

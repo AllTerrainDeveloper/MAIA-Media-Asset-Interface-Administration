@@ -1,9 +1,9 @@
 # Releasing MAIA
 
 The installable plugin keeps the slug `allterrain-media-explorer`. Its public
-name is **MAIA**. The directory title is **MAIA — Media Library**: WordPress.org
-requires at least five letters/numbers in the plugin header name. The app and
-artwork keep the short MAIA name. The version header, `ATME_VERSION`, `readme.txt` Stable tag,
+name is **MAIA**, short for **Media Asset Interface & Administration**.
+The directory title uses the full expansion: **MAIA — Media Asset Interface & Administration**.
+The app and artwork keep the short MAIA name. The version header, `ATME_VERSION`, `readme.txt` Stable tag,
 `package.json` and both root version entries in `package-lock.json` must agree.
 The packager refuses a mismatch.
 

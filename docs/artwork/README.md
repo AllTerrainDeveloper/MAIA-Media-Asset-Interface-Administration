@@ -5,9 +5,9 @@ cream graph paper, a dark rounded serif wordmark, terracotta punctuation, sage
 and peach shapes, and tilted paper cards. Its own mark is an **M with a folder
 badge**; the banner uses a stack of illustrated media cards.
 
-The product name is **MAIA**. “By AllTerrain” identifies the developer without
-expanding the acronym or changing the plugin's machine slug. The WordPress.org
-listing adds the descriptor “Media Library” to satisfy its minimum-name-length rule.
+The product name is **MAIA**, short for **Media Asset Interface & Administration**.
+The wordmark stays MAIA; the readmes and WordPress.org listing explain its full
+meaning. “By AllTerrain” identifies the developer. The machine slug stays unchanged.
 
 ## Edit and export
 

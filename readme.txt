@@ -1,4 +1,4 @@
-=== MAIA — Media Library ===
+=== MAIA — Media Asset Interface & Administration ===
 Contributors: allterraindeveloper
 Tags: media library, folders, image optimization, webp, avif
 Requires at least: 6.0
@@ -15,7 +15,8 @@ Organize, view and optimize your WordPress media with folders, collections, form
 
 Your media, in good order.
 
-MAIA gives your WordPress media a home on the
+MAIA stands for **Media Asset Interface & Administration**. It gives your
+WordPress media a home on the
 [OpenStation](https://wordpress.org/plugins/desktop-mode/) desktop. Find an image,
 file it into a folder, open it in the viewer, or prepare it for your next post —
 all from the same window. Made by AllTerrain, the developer behind AllTerrain

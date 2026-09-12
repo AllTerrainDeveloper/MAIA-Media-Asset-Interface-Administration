@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       MAIA — Media Library
+ * Plugin Name:       MAIA — Media Asset Interface & Administration
  * Plugin URI:        https://github.com/AllTerrainDeveloper/MAIA-Media-Asset-Interface-Administration
  * Description:       Organize, view and optimize your WordPress media in OpenStation. Folders, collections, format conversion and restorable versions.
  * Version:           0.1.0
