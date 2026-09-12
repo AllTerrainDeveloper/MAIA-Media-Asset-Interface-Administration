@@ -126,6 +126,7 @@ site is **http://localhost:8889**.
 
 ```bash
 npm run artwork:build            # export the four directory banner/icon PNGs
+npm run artwork:check            # compare PNGs to sources without changing files
 npm run plugin:check             # WordPress Plugin Check (needs wp-env)
 npm run plugin:release           # build, JS/PHP tests, Plugin Check and ZIP; does not publish
 npm run bump-version -- 0.1.1    # update version files only; does not commit or tag

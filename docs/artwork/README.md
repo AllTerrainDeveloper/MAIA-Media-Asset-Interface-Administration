@@ -18,8 +18,11 @@ npm ci
 npm run artwork:build
 ```
 
-The renderer uses bundled fonts and ignores system fonts, so macOS and Linux
-produce the same artwork. Commit both the source and all four rendered PNGs in
+The renderer uses bundled fonts and ignores system fonts. CI runs
+`npm run artwork:check` to compare exports to their SVG sources without rewriting
+them. It allows small edge-antialiasing differences between ARM/macOS and
+x64/Linux (channel differences up to 8/255; at most 0.1% of pixels above that).
+Layout, text and palette changes still require regenerated exports. Commit both the source and all four rendered PNGs in
 `.wordpress-org/`. That folder also holds four real screenshots of MAIA on the
 local Docker demo site, captured on 13 September 2026. Screenshot 3 is a crop of
 the folder controls; no controls or media are fabricated or retouched.

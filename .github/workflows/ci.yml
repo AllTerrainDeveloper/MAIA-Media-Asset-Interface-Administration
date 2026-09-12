@@ -54,8 +54,7 @@ jobs:
 
       - name: Artwork and package
         run: |
-          npm run artwork:build
-          git diff --exit-code -- .wordpress-org/
+          npm run artwork:check
           node bin/package.mjs
 
   php:

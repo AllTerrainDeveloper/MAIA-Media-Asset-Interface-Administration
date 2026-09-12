@@ -29,7 +29,8 @@
 		"test:php:tools": "node bin/fetch-php-tools.mjs",
 		"artwork:build": "node bin/artwork.mjs",
 		"bump-version": "bash bin/bump-version.sh",
-		"release": "bash bin/release.sh"
+		"release": "bash bin/release.sh",
+		"artwork:check": "node bin/artwork.mjs --check"
 	},
 	"devDependencies": {
 		"@resvg/resvg-js": "^2.6.2",

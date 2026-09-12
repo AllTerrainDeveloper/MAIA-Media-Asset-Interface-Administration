@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -94,6 +94,22 @@ describe( 'WordPress.org package', () => {
 } );
 
 describe( 'release helpers', () => {
+	it( 'checks artwork without rewriting it and rejects a changed banner title', () => {
+		const dir = fixture();
+		cpSync( join( root, 'docs/artwork' ), join( dir, 'docs/artwork' ), { recursive: true } );
+		symlinkSync( join( root, 'node_modules' ), join( dir, 'node_modules' ), 'dir' );
+		const imagePath = join( dir, '.wordpress-org/banner-1544x500.png' );
+		const before = readFileSync( imagePath );
+		const run = () => spawnSync( 'node', [ 'bin/artwork.mjs', '--check' ], { cwd: dir, encoding: 'utf8' } );
+		expect( run().status ).toBe( 0 );
+		const source = join( dir, 'docs/artwork/banner.svg' );
+		writeFileSync( source, readFileSync( source, 'utf8' ).replace( 'YOUR MEDIA', 'WRONG COPY' ) );
+		const result = run();
+		expect( result.status ).toBe( 1 );
+		expect( result.stderr ).toContain( 'does not match its SVG source' );
+		expect( readFileSync( imagePath ).equals( before ) ).toBe( true );
+	} );
+
 	it.each( [ '1.2.3', '1.2.3-rc1' ] )( 'bumps every version to %s even when called outside the repository', ( version ) => {
 		const dir = fixture();
 		const result = spawnSync( 'bash', [ join( dir, 'bin/bump-version.sh' ), version ], { cwd: tmpdir(), encoding: 'utf8' } );
