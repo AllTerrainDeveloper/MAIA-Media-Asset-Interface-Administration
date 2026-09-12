@@ -114,6 +114,7 @@ function atme_asset_suffix() {
  */
 function atme_script_config() {
 	$config = array(
+		'codecUrl'     => esc_url_raw( add_query_arg( 'ver', atme_asset_version( 'assets/js/codec.min.js' ), ATME_URL . 'assets/js/codec.min.js' ) ),
 		'restUrl'      => esc_url_raw( rest_url( ATME_REST_NAMESPACE ) ),
 		'wpRestUrl'    => esc_url_raw( rest_url( 'wp/v2' ) ),
 		'nonce'        => wp_create_nonce( 'wp_rest' ),

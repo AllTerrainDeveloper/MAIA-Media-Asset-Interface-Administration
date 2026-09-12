@@ -54,13 +54,26 @@
     }
     return { body: await response.json(), response };
   }
+  function restEndpoint(base, path) {
+    const url = new URL(base, window.location.href);
+    const split = path.indexOf("?");
+    const route = split < 0 ? path : path.slice(0, split);
+    const query = split < 0 ? "" : path.slice(split + 1);
+    if (url.searchParams.has("rest_route")) {
+      url.searchParams.set("rest_route", url.searchParams.get("rest_route").replace(/\/$/, "") + route);
+    } else {
+      url.pathname = url.pathname.replace(/\/$/, "") + route;
+    }
+    new URLSearchParams(query).forEach((value, key) => url.searchParams.append(key, value));
+    return url.href;
+  }
   async function request(path, init = {}, silent = false) {
     const config = getConfig();
-    return (await requestUrl(config.restUrl.replace(/\/$/, "") + path, init, silent)).body;
+    return (await requestUrl(restEndpoint(config.restUrl, path), init, silent)).body;
   }
   async function wpRequest(path, init = {}, silent = false) {
     const config = getConfig();
-    return requestUrl(config.wpRestUrl.replace(/\/$/, "") + path, init, silent);
+    return requestUrl(restEndpoint(config.wpRestUrl, path), init, silent);
   }
   const MEDIA_FIELDS = [
     "id",
@@ -85,9 +98,9 @@
     if (!rendered) {
       return "";
     }
-    const div = document.createElement("div");
-    div.innerHTML = rendered;
-    return (div.textContent ?? "").trim();
+    const template = document.createElement("template");
+    template.innerHTML = rendered;
+    return (template.content.textContent ?? "").trim();
   }
   function toMediaItem(raw) {
     const sizes = raw.media_details?.sizes ?? {};
@@ -181,7 +194,7 @@
     const shell = getShell();
     const form = new FormData();
     form.append("file", file, file.name);
-    const url = `${config.restUrl.replace(/\/$/, "")}/replace/${id}`;
+    const url = restEndpoint(config.restUrl, `/replace/${id}`);
     const options = { method: "POST", credentials: "same-origin", body: form };
     if (!shell?.fetch) {
       options.headers = { "X-WP-Nonce": config.nonce };
@@ -1563,6 +1576,29 @@
       this.tiles.clear();
     }
   }
+  async function suggestAltText(item) {
+    const shell = getShell();
+    if (!shell?.ai?.ask || !shell.confirm) {
+      return null;
+    }
+    const allowed = await shell.confirm({
+      title: "Send media details to AI?",
+      message: "The image URL, title and caption will be sent to the AI provider configured in OpenStation to draft alt text. The provider may fetch the image at that URL. Its terms and privacy policy apply.",
+      confirmLabel: "Send and draft"
+    });
+    if (!allowed) {
+      return null;
+    }
+    const answer = await shell.ai.ask(
+      `Write concise, descriptive alt text (under 15 words, no quotes, no "image of") for a WordPress media item. Its file URL is ${item.url}, its title is "${item.title}" and its caption is "${item.caption}". Reply with the alt text only.`
+    );
+    const text = typeof answer === "string" ? answer : answer?.message;
+    const alt = typeof text === "string" ? text.trim().replace(/^"|"$/g, "") : "";
+    if (!alt || alt.length > 300) {
+      throw new Error("The assistant did not return usable alt text.");
+    }
+    return alt;
+  }
   function browserEncodeSupport() {
     const canvas = document.createElement("canvas");
     canvas.width = 1;
@@ -1585,8 +1621,7 @@
       codecPromise = new Promise((resolve, reject) => {
         const config = getConfig();
         const script = document.createElement("script");
-        const base = config.restUrl.replace(/wp-json\/.*$/, "");
-        script.src = `${base}wp-content/plugins/allterrain-media-explorer/assets/js/codec.min.js?ver=${config.version}`;
+        script.src = config.codecUrl;
         script.async = true;
         script.onload = () => {
           if (window.atmeCodec) {
@@ -1595,7 +1630,11 @@
             reject(new Error("The codec bundle loaded but registered nothing."));
           }
         };
-        script.onerror = () => reject(new Error("The codec bundle could not be fetched."));
+        script.onerror = () => {
+          codecPromise = null;
+          script.remove();
+          reject(new Error("The codec bundle could not be fetched."));
+        };
         document.head.appendChild(script);
       });
     }
@@ -3186,7 +3225,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             if (!current || next === lastSaved) {
               return;
             }
-            void updateMedia(current.id, { [key]: next }).then((fresh) => {
+            void updateMedia(item.id, { [key]: next }).then((fresh) => {
               lastSaved = next;
               if (epoch === thisEpoch) {
                 current = fresh;
@@ -3210,23 +3249,16 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             className: "atme-button atme-button--small",
             onClick: () => {
               suggest.setAttribute("disabled", "");
-              void getShell().ai.ask(
-                `Write concise, descriptive alt text (under 15 words, no quotes, no "image of") for a WordPress media item. Its file URL is ${item.url}, its title is "${item.title}" and its caption is "${item.caption}". Reply with the alt text only.`
-              ).then((answer) => {
-                const text = typeof answer === "string" ? answer : String(answer?.message ?? "");
-                const alt = text.trim().replace(/^"|"$/g, "");
-                if (!alt || alt.length > 300) {
-                  getShell()?.notify?.({
-                    title: "No suggestion",
-                    body: "The assistant did not return usable alt text.",
-                    type: "error"
-                  });
+              void suggestAltText(item).then((alt) => {
+                if (!alt || epoch !== thisEpoch) {
                   return;
                 }
                 return updateMedia(item.id, { alt_text: alt }).then((fresh) => {
                   getShell()?.showToast?.({ message: "Alt text drafted — give it a read" });
                   delegate.onChanged(fresh);
-                  render(fresh);
+                  if (epoch === thisEpoch) {
+                    render(fresh);
+                  }
                 });
               }).catch(
                 (error) => getShell()?.notify?.({ title: "No suggestion", body: error.message, type: "error" })
@@ -3384,7 +3416,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       body.textContent = "";
       if (rows.length === 0) {
         body.appendChild(
-          emptyStateEl({ title: "Not used anywhere", body: "Safe to delete.", icon: "dashicons-yes-alt" })
+          emptyStateEl({ title: "No visible references found", body: "Other posts, plugins or external sites may still use this file.", icon: "dashicons-yes-alt" })
         );
         return;
       }
@@ -3452,6 +3484,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       show: render,
       showEmpty: renderEmpty,
       destroy: () => {
+        epoch += 1;
         host.textContent = "";
         current = null;
       }
@@ -3506,7 +3539,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     );
     section.appendChild(
       checkboxControl({
-        label: "Replace in place (same URL; the old file is kept as a version)",
+        label: "Replace this attachment (a new format changes its URL)",
         onChange: (checked) => {
           state.replace = checked;
         }
@@ -3549,7 +3582,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     title.textContent = "Replace file";
     section.appendChild(title);
     section.appendChild(
-      noticeEl("Swap the file, keep the URL. Every post using it shows the new one; the old file becomes a version.")
+      noticeEl("The old file becomes a version. Same-format replacements keep the URL. Changing format changes the URL; existing embedded links may need updating.")
     );
     const picker = document.createElement("input");
     picker.type = "file";
@@ -3828,7 +3861,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       return;
     }
     const attempt = (deadline) => {
-      if (pending.get(element) !== token) {
+      if (pending$1.get(element) !== token) {
         return;
       }
       const windowId = windowIdOf(element);
@@ -3845,22 +3878,22 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
           warned = true;
           console.error("[AllTerrain Media Explorer] The shell refused a window identity.", error, ref);
         }
-        pending.delete(element);
+        pending$1.delete(element);
         return;
       }
       const stuck = !ref || api.get?.(windowId)?.id === ref.id;
       if (stuck || Date.now() >= deadline) {
-        pending.delete(element);
+        pending$1.delete(element);
         return;
       }
       window.setTimeout(() => attempt(deadline), ATTACH_POLL_MS);
     };
     const token = Symbol("atf-identity");
-    pending.set(element, token);
+    pending$1.set(element, token);
     attempt(Date.now() + ATTACH_TIMEOUT_MS);
   }
   let warned = false;
-  const pending = /* @__PURE__ */ new WeakMap();
+  const pending$1 = /* @__PURE__ */ new WeakMap();
   const wanted = /* @__PURE__ */ new Map();
   function reapply() {
     for (const [element, ref] of wanted) {
@@ -3924,12 +3957,13 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     if (!shell || id <= 0) {
       return;
     }
-    window.__atmeView = id;
     shell.openWindow?.(VIEWER_WINDOW_ID, {
       source: "allterrain-media-explorer",
       params: { mediaId: id }
     });
-    shell.broadcast?.(VIEW_TOPIC, { id });
+    if (!shell.getWindowConfig?.(VIEWER_WINDOW_ID)?.osApp) {
+      shell.broadcast?.(VIEW_TOPIC, { id });
+    }
   }
   const REVEAL_TOPIC = "atme.reveal";
   const SMART_VIEWS = [
@@ -3955,13 +3989,17 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     orderby: "date",
     order: "desc"
   };
-  function mountExplorer(root) {
+  function mountExplorer(root, params = {}) {
     const app = new ExplorerApp(root);
+    app.retarget(params);
     app.boot();
-    return () => app.destroy();
+    return Object.assign(() => app.destroy(), { retarget: (next) => app.retarget(next) });
   }
   class ExplorerApp {
     constructor(root) {
+      this.disposed = false;
+      this.booted = false;
+      this.target = {};
       this.teardowns = [];
       this.grid = null;
       this.inspector = null;
@@ -3983,8 +4021,25 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       this.folderDropOffs = [];
       this.root = root;
     }
+    /** Targets this instance, including requests received while components load. */
+    retarget(params) {
+      this.target = params;
+      if (!this.booted || this.disposed) {
+        return;
+      }
+      const id = Number(params.mediaId ?? 0);
+      if (Number.isSafeInteger(id) && id > 0) {
+        void this.revealItem(id);
+      }
+      if (params.wizard === true) {
+        this.openWizard();
+      }
+    }
     async boot() {
       await ensureComponents().catch(() => false);
+      if (this.disposed) {
+        return;
+      }
       const loading = this.root.querySelector("[data-atme-loading]");
       const frame = this.root.querySelector("[data-atme-frame]");
       const sidebar = this.root.querySelector("[data-atme-sidebar]");
@@ -4059,16 +4114,8 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       if (shell?.subscribe) {
         this.teardowns.push(shell.subscribe("atme.wizard", () => this.openWizard()));
       }
-      const pendingReveal = window.__atmeReveal;
-      if (pendingReveal) {
-        delete window.__atmeReveal;
-        void this.revealItem(pendingReveal);
-      }
-      const pendingWizard = window.__atmeWizard;
-      if (pendingWizard) {
-        delete window.__atmeWizard;
-        this.openWizard();
-      }
+      this.booted = true;
+      this.retarget(this.target);
       await Promise.all([this.runQuery(), this.refreshFolders(), this.refreshCollections()]);
     }
     /**
@@ -4854,6 +4901,8 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       this.statusEl.textContent = parts.join(" · ");
     }
     destroy() {
+      this.disposed = true;
+      this.queryEpoch++;
       for (const teardown of this.teardowns.splice(0)) {
         teardown();
       }
@@ -4902,12 +4951,13 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
   function mountViewer(root, params = {}) {
     const app = new ViewerApp(root);
     const teardowns = [() => app.destroy()];
-    const parked = window.__atmeView;
-    const initial = Number(params.mediaId ?? parked ?? 0);
-    delete window.__atmeView;
-    if (initial > 0) {
-      void app.show(initial);
-    }
+    const retarget = (next) => {
+      const id = Number(next.mediaId ?? 0);
+      if (Number.isSafeInteger(id) && id > 0) {
+        void app.show(id);
+      }
+    };
+    retarget(params);
     const shell = getShell();
     if (shell?.subscribe) {
       teardowns.push(
@@ -4926,11 +4976,11 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         }
       })
     );
-    return () => {
+    return Object.assign(() => {
       for (const teardown of teardowns.splice(0)) {
         teardown();
       }
-    };
+    }, { retarget });
   }
   class ViewerApp {
     constructor(root) {
@@ -5178,9 +5228,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
           const shell = getShell();
           const id = this.item?.id ?? 0;
           if (id > 0) {
-            window.__atmeReveal = id;
-            shell?.openWindow?.("allterrain-media-explorer", { source: "atme-viewer" });
-            shell?.broadcast?.("atme.reveal", { id });
+            shell?.openWindow?.("allterrain-media-explorer", { source: "atme-viewer", params: { mediaId: id } });
+            if (!shell?.getWindowConfig?.("allterrain-media-explorer")?.osApp) {
+              shell?.broadcast?.("atme.reveal", { id });
+            }
           }
         }
       });
@@ -5362,6 +5413,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       window.addEventListener("keydown", this.keyHandler, true);
     }
     destroy() {
+      this.epoch++;
       if (this.keyHandler) {
         window.removeEventListener("keydown", this.keyHandler, true);
         this.keyHandler = null;
@@ -5373,23 +5425,26 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     }
   }
   const MOUNTED = "atmeMounted";
-  function mountOnce(root) {
+  function mountOnce(root, params = {}) {
     if (root.dataset[MOUNTED] === "1") {
       return () => void 0;
     }
     root.dataset[MOUNTED] = "1";
-    const teardown = mountExplorer(root);
+    const teardown = mountExplorer(root, params);
     return () => {
       delete root.dataset[MOUNTED];
       teardown();
     };
   }
   function registerNativeWindow() {
+    if (getShell()?.getWindowConfig?.("allterrain-media-explorer")?.osApp) {
+      return;
+    }
     const w2 = window;
     w2.openStationNativeWindows = w2.openStationNativeWindows ?? {};
-    w2.openStationNativeWindows["allterrain-media-explorer"] = (body) => {
+    w2.openStationNativeWindows["allterrain-media-explorer"] = (body, ctx) => {
       const root = body.querySelector("[data-atme-root]") ?? body;
-      return mountOnce(root);
+      return mountOnce(root, ctx?.params);
     };
     w2.openStationNativeWindows["atme-viewer"] = (body, ctx) => {
       const root = body.querySelector("[data-atme-viewer-root]") ?? body;
@@ -5397,4 +5452,42 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     };
   }
   registerNativeWindow();
+  const pending = window;
+  (pending.openStationAppsPending ?? (pending.openStationAppsPending = [])).push(({ defineApp, html }) => {
+    for (const id of ["allterrain-media-explorer", "atme-viewer"]) {
+      const ui = (ctx) => ctx.ui(() => ({
+        app: null,
+        revision: -1
+      }));
+      defineApp(id, {
+        placeholder: () => ({}),
+        // The media canvas owns its children; same-template renders keep them.
+        view: () => html`<div class="atme-app-host" os-preserve></div>`,
+        mounted: (ctx) => {
+          const host = ctx.root.querySelector(".atme-app-host");
+          const params = ctx.loading ? {} : ctx.state;
+          if (id === "atme-viewer") {
+            host.classList.add("atme-viewer");
+            ui(ctx).app = mountViewer(host, params);
+          } else {
+            host.classList.add("atme");
+            host.innerHTML = '<div class="atme__frame" data-atme-frame><aside class="atme__sidebar" data-atme-sidebar></aside><main class="atme__main" data-atme-main></main><aside class="atme__inspector" data-atme-inspector hidden></aside></div>';
+            ui(ctx).app = mountExplorer(host, params);
+          }
+          ui(ctx).revision = ctx.loading ? -1 : ctx.state.revision;
+          return () => {
+            ui(ctx).app?.();
+            ui(ctx).app = null;
+          };
+        },
+        updated: (ctx) => {
+          const local = ui(ctx);
+          if (!ctx.loading && local.app && local.revision !== ctx.state.revision) {
+            local.revision = ctx.state.revision;
+            local.app.retarget(ctx.state);
+          }
+        }
+      });
+    }
+  });
 })();

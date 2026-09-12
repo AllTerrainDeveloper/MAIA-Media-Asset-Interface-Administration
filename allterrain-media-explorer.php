@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       MAIA — Media Asset Interface & Administration
  * Plugin URI:        https://github.com/AllTerrainDeveloper/MAIA-Media-Asset-Interface-Administration
- * Description:       MAIA (Media Asset Interface & Administration) — the media library WordPress should have shipped, as an OpenStation desktop app. Folders, collections and smart views; convert images between formats; replace a file in place without breaking its URL; a viewer that outclasses the attachment screen; a batch optimization wizard; and media you can drag — out of the window, into Gutenberg, onto a task card, across the desktop.
+ * Description:       MAIA (Media Asset Interface & Administration) — the media library WordPress should have shipped, as an OpenStation desktop app. Folders, collections and smart views; convert images between formats; replace files with restorable versions; a viewer that outclasses the attachment screen; a batch optimization wizard; and media you can drag — out of the window, into Gutenberg, onto a task card, across the desktop.
  * Version:           0.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
@@ -110,6 +110,7 @@ require_once ATME_DIR . 'includes/assets.php';
 require_once ATME_DIR . 'includes/admin-page.php';
 require_once ATME_DIR . 'includes/explorer.php';
 require_once ATME_DIR . 'includes/window.php';
+require_once ATME_DIR . 'includes/apps.php';
 
 register_activation_hook( __FILE__, 'atme_activate' );
 

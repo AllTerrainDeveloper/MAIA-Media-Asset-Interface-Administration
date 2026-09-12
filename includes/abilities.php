@@ -108,7 +108,7 @@ function atme_register_abilities() {
 				'label'               => __( 'Get media usage', 'allterrain-media-explorer' ),
 				'description'         => __( 'Lists every post and setting using a media item.', 'allterrain-media-explorer' ),
 				'category'            => 'allterrain-media-explorer',
-				'permission_callback' => 'atme_can_upload',
+				'permission_callback' => 'atme_can_edit_media',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'required'   => array( 'id' ),
@@ -130,7 +130,7 @@ function atme_register_abilities() {
 				'label'               => __( 'Set alt text', 'allterrain-media-explorer' ),
 				'description'         => __( 'Writes an image’s alternative text.', 'allterrain-media-explorer' ),
 				'category'            => 'allterrain-media-explorer',
-				'permission_callback' => 'atme_can_upload',
+				'permission_callback' => 'atme_can_edit_media',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'required'   => array( 'id', 'alt' ),
@@ -153,7 +153,7 @@ function atme_register_abilities() {
 				'label'               => __( 'Convert media', 'allterrain-media-explorer' ),
 				'description'         => __( 'Converts an image to another format, as a copy or in place.', 'allterrain-media-explorer' ),
 				'category'            => 'allterrain-media-explorer',
-				'permission_callback' => 'atme_can_upload',
+				'permission_callback' => 'atme_can_edit_media',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'required'   => array( 'id', 'format' ),
@@ -203,7 +203,7 @@ function atme_register_abilities() {
 				'label'               => __( 'File media into a folder', 'allterrain-media-explorer' ),
 				'description'         => __( 'Adds media items to a folder, additively.', 'allterrain-media-explorer' ),
 				'category'            => 'allterrain-media-explorer',
-				'permission_callback' => 'atme_can_upload',
+				'permission_callback' => 'atme_can_edit_media_batch',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'required'   => array( 'ids', 'folder' ),
@@ -295,6 +295,9 @@ function atme_ability_search_media( $input ) {
 	$rows = array();
 
 	foreach ( ( new WP_Query( $query_args ) )->posts as $post ) {
+		if ( ! atme_can_edit_media( array( 'id' => $post->ID ) ) ) {
+			continue;
+		}
 		$rows[] = array(
 			'id'    => (int) $post->ID,
 			'title' => get_the_title( $post ),

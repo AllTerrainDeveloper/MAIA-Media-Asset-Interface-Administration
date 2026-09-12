@@ -148,18 +148,33 @@ async function requestUrl< T >( url: string, init: RequestInit = {}, silent = fa
 	return { body: ( await response.json() ) as T, response };
 }
 
+/** Join a namespace and route without putting query args inside rest_route. */
+export function restEndpoint( base: string, path: string ): string {
+	const url = new URL( base, window.location.href );
+	const split = path.indexOf( '?' );
+	const route = split < 0 ? path : path.slice( 0, split );
+	const query = split < 0 ? '' : path.slice( split + 1 );
+	if ( url.searchParams.has( 'rest_route' ) ) {
+		url.searchParams.set( 'rest_route', url.searchParams.get( 'rest_route' )!.replace( /\/$/, '' ) + route );
+	} else {
+		url.pathname = url.pathname.replace( /\/$/, '' ) + route;
+	}
+	new URLSearchParams( query ).forEach( ( value, key ) => url.searchParams.append( key, value ) );
+	return url.href;
+}
+
 /** One request under the plugin's own namespace. */
 async function request< T >( path: string, init: RequestInit = {}, silent = false ): Promise< T > {
 	const config = getConfig();
 
-	return ( await requestUrl< T >( config.restUrl.replace( /\/$/, '' ) + path, init, silent ) ).body;
+	return ( await requestUrl< T >( restEndpoint( config.restUrl, path ), init, silent ) ).body;
 }
 
 /** One request under `/wp/v2`. */
 async function wpRequest< T >( path: string, init: RequestInit = {}, silent = false ): Promise< { body: T; response: Response } > {
 	const config = getConfig();
 
-	return requestUrl< T >( config.wpRestUrl.replace( /\/$/, '' ) + path, init, silent );
+	return requestUrl< T >( restEndpoint( config.wpRestUrl, path ), init, silent );
 }
 
 /** The `_fields` list one media row needs — nothing else crosses the wire. */
@@ -211,11 +226,12 @@ function textOf( rendered?: string ): string {
 		return '';
 	}
 
-	const div = document.createElement( 'div' );
+	const template = document.createElement( 'template' );
 
-	div.innerHTML = rendered;
+	// Template contents are inert: event handlers and resource loads never run.
+	template.innerHTML = rendered;
 
-	return ( div.textContent ?? '' ).trim();
+	return ( template.content.textContent ?? '' ).trim();
 }
 
 /** One REST row → one grid item. */
@@ -389,7 +405,7 @@ export async function replaceMedia( id: number, file: File ): Promise< { id: num
 
 	form.append( 'file', file, file.name );
 
-	const url = `${ config.restUrl.replace( /\/$/, '' ) }/replace/${ id }`;
+	const url = restEndpoint( config.restUrl, `/replace/${ id }` );
 	const options: RequestInit = { method: 'POST', credentials: 'same-origin', body: form };
 
 	if ( ! shell?.fetch ) {

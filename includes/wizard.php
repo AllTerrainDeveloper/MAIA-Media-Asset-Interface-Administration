@@ -75,6 +75,9 @@ function atme_wizard_scan_chunk( $offset, $limit ) {
 	$modern   = ! empty( $encode['webp'] ) || ! empty( $encode['avif'] );
 
 	foreach ( $query->posts as $post ) {
+		if ( ! atme_can_edit_media( array( 'id' => $post->ID ) ) ) {
+			continue;
+		}
 		$id    = (int) $post->ID;
 		$mime  = (string) $post->post_mime_type;
 		$title = get_the_title( $id );
@@ -182,7 +185,7 @@ function atme_wizard_duplicate_findings( $id, $title, $hash ) {
 	);
 
 	$earlier = array_filter( array_map( 'intval', $twins ), static function ( $twin ) use ( $id ) {
-		return $twin < $id;
+		return $twin < $id && atme_can_edit_media( array( 'id' => $twin ) );
 	} );
 
 	if ( empty( $earlier ) ) {
@@ -202,8 +205,8 @@ function atme_wizard_duplicate_findings( $id, $title, $hash ) {
 /**
  * Persists the wizard's resumable state.
  *
- * One option, one user at a time: the wizard is an administrative sweep, and
- * two concurrent sweeps converting the same files would trip over each other.
+ * A per-user, per-site option: one author must never resume or overwrite
+ * another author’s queue. Old shared queues are intentionally not adopted.
  *
  * @since 0.1.0
  *
@@ -212,11 +215,13 @@ function atme_wizard_duplicate_findings( $id, $title, $hash ) {
  */
 function atme_wizard_save_state( $state ) {
 	if ( null === $state ) {
-		delete_option( ATME_OPTION_WIZARD );
+		delete_user_option( get_current_user_id(), ATME_OPTION_WIZARD );
 		return;
 	}
 
-	update_option( ATME_OPTION_WIZARD, $state, false );
+	update_user_option( get_current_user_id(), ATME_OPTION_WIZARD, map_deep( $state, static function ( $value ) {
+		return is_string( $value ) ? sanitize_text_field( $value ) : $value;
+	} ) );
 }
 
 /**
@@ -227,7 +232,7 @@ function atme_wizard_save_state( $state ) {
  * @return array|null State, or null when none.
  */
 function atme_wizard_state() {
-	$state = get_option( ATME_OPTION_WIZARD, null );
+	$state = get_user_option( ATME_OPTION_WIZARD, get_current_user_id() );
 
 	return is_array( $state ) ? $state : null;
 }

@@ -109,6 +109,7 @@ export interface ConversionCapabilities {
 
 /** The config PHP prints as `window.allTerrainMediaExplorer`. */
 export interface Config {
+	codecUrl: string;
 	restUrl: string;
 	wpRestUrl: string;
 	nonce: string;

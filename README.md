@@ -10,7 +10,7 @@ Part of the AllTerrain family.**
 [![PHP 7.4+](https://img.shields.io/badge/PHP-7.4%2B-777bb4)](https://php.net)
 [![Requires OpenStation](https://img.shields.io/badge/requires-OpenStation-c1622f)](https://github.com/WordPress/openstation)
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-47%20PHP%20%2B%2075%20JS-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-57%20PHP%20%2B%2085%20JS-brightgreen)](#testing)
 
 ![The MAIA library window on the OpenStation desktop](.github/screenshots/library.png)
 
@@ -23,7 +23,7 @@ Part of the AllTerrain family.**
 MAIA is a media library that opens as a window on the OpenStation desktop and does
 what core's grid cannot: **folders** and saved collections, **format
 conversion** (JPEG/PNG/WebP/AVIF, server-side via Imagick/GD or in the
-browser via canvas + WASM), **replace-in-place** with restorable versions,
+browser via canvas + WASM), **replace-in-place** with restorable versions (format changes also change the URL),
 **HEIC intake** for iPhone photos, a resumable **Optimization Wizard**, and
 an honest answer to *"where is this file used?"* before anything is
 deleted.
@@ -87,14 +87,13 @@ npm install
 npm run build          # builds explorer/shell/codec bundles + deploys to a sibling QA checkout
 npm run dev            # watch mode for the explorer bundle
 npm run typecheck
-npm test               # vitest (69)
-npm run test:php       # PHPUnit in the QA site's container (45)
+npm test               # vitest
+npm run test:php       # PHPUnit in the QA site's container
 npm run plugin:package # dist/allterrain-media-explorer.zip
 ```
 
 No Composer anywhere: PHP dependencies are WordPress plus the host's own
-Imagick/GD extensions, probed at runtime; the only bundled third-party code
-is [jSquash](https://github.com/jamsinclair/jSquash)'s AVIF encoder
+Imagick/GD extensions, probed at runtime; bundled third-party code includes exifr (MIT) and [jSquash](https://github.com/jamsinclair/jSquash)'s AVIF encoder
 (Apache-2.0, the Squoosh codecs), compiled to WASM and loaded lazily.
 
 ## For developers
@@ -108,3 +107,11 @@ view, report your plugin's media usage.
 ## License
 
 GPL-2.0-or-later.
+
+
+The current shell integration uses OpenStation's **App Framework**, with native
+fallback on older shells. See [the migration and review](docs/review-2026-09.md).
+`npm run test:php` fails when no test backend is running. App contract tests use
+the actual installed OpenStation framework; `ATME_FRAMEWORK_AUTOLOAD` can point
+to another copy inside the PHP environment. CI checks out a pinned framework
+fixture. Local deployment targets the Docker QA site at **http://localhost:8889**.

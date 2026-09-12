@@ -45,19 +45,17 @@ export function fitScale( mediaW: number, mediaH: number, stageW: number, stageH
 	return Math.min( 1, stageW / mediaW, stageH / mediaH );
 }
 
-export function mountViewer( root: HTMLElement, params: Record< string, unknown > = {} ): Teardown {
+export function mountViewer( root: HTMLElement, params: Record< string, unknown > = {} ): Teardown & { retarget: ( next: Record< string, unknown > ) => void } {
 	const app = new ViewerApp( root );
 	const teardowns: Teardown[] = [ () => app.destroy() ];
 
-	// Whichever id reaches us first wins; later broadcasts retarget.
-	const parked = ( window as unknown as { __atmeView?: number } ).__atmeView;
-	const initial = Number( params.mediaId ?? parked ?? 0 );
-
-	delete ( window as unknown as { __atmeView?: number } ).__atmeView;
-
-	if ( initial > 0 ) {
-		void app.show( initial );
-	}
+	const retarget = ( next: Record< string, unknown > ) => {
+		const id = Number( next.mediaId ?? 0 );
+		if ( Number.isSafeInteger( id ) && id > 0 ) {
+			void app.show( id );
+		}
+	};
+	retarget( params );
 
 	const shell = getShell();
 
@@ -81,11 +79,11 @@ export function mountViewer( root: HTMLElement, params: Record< string, unknown 
 		} )
 	);
 
-	return () => {
+	return Object.assign( () => {
 		for ( const teardown of teardowns.splice( 0 ) ) {
 			teardown();
 		}
-	};
+	}, { retarget } );
 }
 
 class ViewerApp {
@@ -422,9 +420,10 @@ class ViewerApp {
 				const id = this.item?.id ?? 0;
 
 				if ( id > 0 ) {
-					( window as unknown as { __atmeReveal?: number } ).__atmeReveal = id;
-					shell?.openWindow?.( 'allterrain-media-explorer', { source: 'atme-viewer' } );
-					shell?.broadcast?.( 'atme.reveal', { id } );
+					shell?.openWindow?.( 'allterrain-media-explorer', { source: 'atme-viewer', params: { mediaId: id } } );
+					if ( ! shell?.getWindowConfig?.< { osApp?: boolean } >( 'allterrain-media-explorer' )?.osApp ) {
+						shell?.broadcast?.( 'atme.reveal', { id } );
+					}
 				}
 			},
 		} );
@@ -658,6 +657,7 @@ class ViewerApp {
 	}
 
 	public destroy(): void {
+		this.epoch++;
 		if ( this.keyHandler ) {
 			window.removeEventListener( 'keydown', this.keyHandler, true );
 			this.keyHandler = null;

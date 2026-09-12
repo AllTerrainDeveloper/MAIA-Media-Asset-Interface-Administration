@@ -6,3 +6,6 @@ dist/
 # Fetched PHP test toolchain (bin/fetch-php-tools.mjs) — never committed.
 bin/phpunit.phar
 bin/phpunit-polyfills/
+
+# Pinned OpenStation framework used by CI contract tests.
+.test-framework/

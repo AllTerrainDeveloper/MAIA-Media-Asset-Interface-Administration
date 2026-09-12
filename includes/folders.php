@@ -275,9 +275,15 @@ function atme_duplicate_groups() {
 	$groups = array();
 
 	foreach ( (array) $rows as $row ) {
+		$ids = array_values( array_filter( array_map( 'intval', explode( ',', (string) $row->ids ) ), static function ( $id ) {
+			return atme_can_edit_media( array( 'id' => $id ) );
+		} ) );
+		if ( count( $ids ) < 2 ) {
+			continue;
+		}
 		$groups[] = array(
 			'hash' => (string) $row->hash,
-			'ids'  => array_map( 'intval', explode( ',', (string) $row->ids ) ),
+			'ids'  => $ids,
 		);
 	}
 

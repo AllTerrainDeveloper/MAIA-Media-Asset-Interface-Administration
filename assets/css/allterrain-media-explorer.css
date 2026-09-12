@@ -883,3 +883,9 @@
 		transition: none;
 	}
 }
+
+/* The App Framework body contains the preserved media canvas. */
+.atme-app-host {
+	block-size: 100%;
+	min-block-size: 0;
+}

@@ -20,6 +20,7 @@ to a hook without a change here ships a lie.
 | [hooks-reference.md](hooks-reference.md) | Every PHP action and filter, with status labels. |
 | [javascript.md](javascript.md) | Bundles, drag payloads, broadcast topics, the config blob. |
 | [openstation.md](openstation.md) | Every shell surface the plugin registers, and how it degrades. |
+| [review-2026-09.md](review-2026-09.md) | Forms review lessons, MAIA fixes and validation. |
 | [examples/](examples/) | Copy-paste recipes. |
 
 ## The one-paragraph tour

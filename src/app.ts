@@ -72,16 +72,22 @@ const DEFAULT_QUERY: LibraryQuery = {
 };
 
 /** Mounts the explorer into the window template's root. */
-export function mountExplorer( root: HTMLElement ): Teardown {
+export type MountedMediaApp = Teardown & { retarget: ( params: Record< string, unknown > ) => void };
+
+export function mountExplorer( root: HTMLElement, params: Record< string, unknown > = {} ): MountedMediaApp {
 	const app = new ExplorerApp( root );
+	app.retarget( params );
 
 	app.boot();
 
-	return () => app.destroy();
+	return Object.assign( () => app.destroy(), { retarget: ( next: Record< string, unknown > ) => app.retarget( next ) } );
 }
 
 class ExplorerApp {
 	private readonly root: HTMLElement;
+	private disposed = false;
+	private booted = false;
+	private target: Record< string, unknown > = {};
 	private readonly teardowns: Teardown[] = [];
 	private grid: MediaGrid | null = null;
 	private inspector: Inspector | null = null;
@@ -106,10 +112,28 @@ class ExplorerApp {
 		this.root = root;
 	}
 
+	/** Targets this instance, including requests received while components load. */
+	public retarget( params: Record< string, unknown > ): void {
+		this.target = params;
+		if ( ! this.booted || this.disposed ) {
+			return;
+		}
+		const id = Number( params.mediaId ?? 0 );
+		if ( Number.isSafeInteger( id ) && id > 0 ) {
+			void this.revealItem( id );
+		}
+		if ( params.wizard === true ) {
+			this.openWizard();
+		}
+	}
+
 	public async boot(): Promise< void > {
 		// The shell's controls, before first paint where possible; the
 		// helpers in os-ui fall back to native controls regardless.
 		await ensureComponents().catch( () => false );
+		if ( this.disposed ) {
+			return;
+		}
 
 		const loading = this.root.querySelector< HTMLElement >( '[data-atme-loading]' );
 		const frame = this.root.querySelector< HTMLElement >( '[data-atme-frame]' );
@@ -209,19 +233,8 @@ class ExplorerApp {
 			this.teardowns.push( shell.subscribe( 'atme.wizard', () => this.openWizard() ) );
 		}
 
-		const pendingReveal = ( window as unknown as { __atmeReveal?: number } ).__atmeReveal;
-
-		if ( pendingReveal ) {
-			delete ( window as unknown as { __atmeReveal?: number } ).__atmeReveal;
-			void this.revealItem( pendingReveal );
-		}
-
-		const pendingWizard = ( window as unknown as { __atmeWizard?: boolean } ).__atmeWizard;
-
-		if ( pendingWizard ) {
-			delete ( window as unknown as { __atmeWizard?: boolean } ).__atmeWizard;
-			this.openWizard();
-		}
+		this.booted = true;
+		this.retarget( this.target );
 
 		await Promise.all( [ this.runQuery(), this.refreshFolders(), this.refreshCollections() ] );
 	}
@@ -1235,6 +1248,8 @@ class ExplorerApp {
 	}
 
 	public destroy(): void {
+		this.disposed = true;
+		this.queryEpoch++;
 		for ( const teardown of this.teardowns.splice( 0 ) ) {
 			teardown();
 		}

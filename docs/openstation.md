@@ -7,8 +7,8 @@ one.
 
 | Surface | Registration | What it does |
 |---|---|---|
-| Native window | `openstation_register_window( 'allterrain-media-explorer', … )`, `placement: 'dock'` | The explorer itself. Dock tile comes free. |
-| Viewer window | `openstation_register_window( 'atme-viewer', … )`, `placement: 'none'` | The Media Viewer: dark stage, wheel/pinch zoom + pan, fit/1:1, ← / → walks the library by date, and the ⓘ drawer is the whole inspector. Reached through a photo (double-click anywhere, `params.mediaId` deep-link survives session restore), never launched cold — hence no dock tile. Filter: `atme_viewer_window_args`. |
+| Library app | `App::define( 'allterrain-media-explorer' )`, `placement( 'dock' )` | The explorer itself. Dock tile comes free. |
+| Viewer app | `App::define( 'atme-viewer' )`, `placement( 'none' )` | The Media Viewer: dark stage, wheel/pinch zoom + pan, fit/1:1, ← / → walks the library by date, and the ⓘ drawer is the whole inspector. Reached through a photo (double-click anywhere, `params.mediaId` deep-link survives session restore), never launched cold — hence no dock tile. Filter: `atme_viewer_window_args`. |
 | Wallpaper icon | `openstation_register_icon()` | Desktop shortcut; accepts attachment drops (below). |
 | File opener | `openstation_register_file_opener()` + `os.files.resolve-opener` filter | **MAIA Viewer** (`atme-viewer`) — deliberately *not* default-flagged: the "(default)" suffix in Preferences → File Associations marks the opener WordPress ships, and that stays with the stock media editor. MAIA becomes the *effective* opener through the shell's `os.files.resolve-opener` filter, which only decides when the user has no stored pick — a choice made in Preferences (any opener) always wins. "Reveal in library" lives in the viewer's toolbar rather than as a second opener row. The photo editor's *edit* opener composes alongside. |
 | Commands | `openstation_register_command()` × 2 + JS `wp.os.registerCommand` | ⌘K: open the explorer; start the wizard. |
@@ -57,3 +57,18 @@ collections, conversion engine and REST namespace keep working, the
 signpost page under **Media → Media Explorer** explains where the product
 lives, and an admin notice appears on the Plugins screen. There is no
 second, lesser explorer UI — that copy is the one that rots.
+
+
+## App Framework integration
+
+The library and viewer are discovered from `apps/` on framework-capable shells.
+Their ids, launcher/icon, opener, commands, drag payloads and relations remain
+unchanged. The framework controls mount, reopen and disposal; the client view
+keeps the media canvas under an `os-preserve` host. Read
+[architecture.md](architecture.md#two-app-framework-windows) for the boundary.
+Older shells retain native rendering. Current shells never register a competing
+legacy renderer for these two window ids.
+
+To test locally, run `npm run build`, then open **MAIA** on
+http://localhost:8889/wp-admin/. Reopen a second photo while the viewer remains
+open, use Show in library, open the wizard, and reload the page to check restore.

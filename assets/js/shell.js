@@ -12,26 +12,23 @@
     if (!shell2 || id <= 0) {
       return;
     }
-    window.__atmeView = id;
     shell2.openWindow?.(VIEWER_WINDOW_ID, {
       source: "allterrain-media-explorer",
       params: { mediaId: id }
     });
-    shell2.broadcast?.(VIEW_TOPIC, { id });
+    if (!shell2.getWindowConfig?.(VIEWER_WINDOW_ID)?.osApp) {
+      shell2.broadcast?.(VIEW_TOPIC, { id });
+    }
   }
   const WINDOW_ID = "allterrain-media-explorer";
-  const REVEAL_TOPIC = "atme.reveal";
   function openAndReveal(id) {
     const shell2 = getShell();
     if (!shell2) {
       return;
     }
-    if (id > 0) {
-      window.__atmeReveal = id;
-    }
-    shell2.openWindow?.(WINDOW_ID, { source: "allterrain-media-explorer" });
-    if (id > 0) {
-      shell2.broadcast?.(REVEAL_TOPIC, { id });
+    shell2.openWindow?.(WINDOW_ID, { source: "allterrain-media-explorer", params: { mediaId: id } });
+    if (id > 0 && !shell2.getWindowConfig?.(WINDOW_ID)?.osApp) {
+      shell2.broadcast?.("atme.reveal", { id });
     }
   }
   function registerFileOpener() {
@@ -110,9 +107,10 @@
       description: "Scan the library for oversized images, legacy formats, missing alt text and duplicates.",
       icon: "dashicons-superhero",
       run: () => {
-        window.__atmeWizard = true;
-        openAndReveal(0);
-        getShell()?.broadcast?.("atme.wizard", {});
+        getShell()?.openWindow?.(WINDOW_ID, { params: { wizard: true } });
+        if (!getShell()?.getWindowConfig?.(WINDOW_ID)?.osApp) {
+          getShell()?.broadcast?.("atme.wizard", {});
+        }
         return "Opening the optimization wizard…";
       }
     });

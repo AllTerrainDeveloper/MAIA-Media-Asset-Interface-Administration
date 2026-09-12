@@ -80,6 +80,15 @@ jobs:
       # Nothing is lost by mounting it inactive. The PHPUnit bootstrap loads
       # the plugin itself on `muplugins_loaded` and stubs the OpenStation
       # functions it calls, so the shell never needs to be installed.
+      - name: App Framework contract fixture
+        uses: actions/checkout@v4
+        with:
+          repository: WordPress/openstation
+          ref: 7545b530bf6ba420ebdd647a0d7e418a415d5215
+          path: .test-framework
+          sparse-checkout: includes/framework
+          persist-credentials: false
+
       - name: Start wp-env
         run: npm run env:start
 
