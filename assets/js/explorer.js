@@ -4019,6 +4019,8 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       this.wizardOpen = false;
       this.bulkBar = null;
       this.folderDropOffs = [];
+      this.folderSaves = /* @__PURE__ */ new Map();
+      this.filingStatusEl = null;
       this.root = root;
     }
     /** Targets this instance, including requests received while components load. */
@@ -4058,6 +4060,13 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       const gridHost = document.createElement("div");
       gridHost.className = "atme-gridhost";
       main.appendChild(gridHost);
+      const filingStatus = document.createElement("div");
+      filingStatus.className = "atme-filing-status";
+      filingStatus.setAttribute("role", "status");
+      filingStatus.setAttribute("aria-live", "polite");
+      filingStatus.setAttribute("aria-atomic", "true");
+      main.appendChild(filingStatus);
+      this.filingStatusEl = filingStatus;
       const status = document.createElement("div");
       status.className = "atme-status";
       main.appendChild(status);
@@ -4185,16 +4194,11 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             return;
           }
           if (this.query.folder > 0) {
-            void fileIntoFolder(ids, this.query.folder).then(() => {
-              getShell()?.showToast?.({
-                message: `Filed ${ids.length} item${ids.length === 1 ? "" : "s"}`
-              });
-              void this.runQuery();
-              void this.refreshFolders();
-            });
+            return this.saveToFolder(ids, this.query.folder);
           } else {
             void this.revealItem(ids[0]);
           }
+          return;
         }
       });
       this.teardowns.push(off);
@@ -4312,7 +4316,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     }
     paintSidebar() {
       const sidebar = this.sidebarEl;
-      if (!sidebar) {
+      if (!sidebar || this.disposed) {
         return;
       }
       for (const off of this.folderDropOffs.splice(0)) {
@@ -4364,6 +4368,8 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             },
             folder.count
           );
+          row.dataset.folderId = String(folder.id);
+          this.paintFolderSave(row, folder.id);
           row.style.paddingInlineStart = `${8 + depth * 16}px`;
           foldersGroup.appendChild(row);
           this.folderDropOffs.push(
@@ -4385,15 +4391,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
                 if (ids.length === 0) {
                   return;
                 }
-                void fileIntoFolder(ids, folder.id).then(() => {
-                  getShell()?.showToast?.({
-                    message: `Filed ${ids.length} item${ids.length === 1 ? "" : "s"} into ${folder.name}`
-                  });
-                  void this.refreshFolders();
-                  if (this.query.folder > 0 || this.query.view === "unfiled") {
-                    void this.runQuery();
-                  }
-                });
+                return this.saveToFolder(ids, folder.id);
               }
             })
           );
@@ -4461,6 +4459,76 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         this.sideRow("Optimization Wizard", "dashicons-superhero", this.wizardOpen, () => this.openWizard())
       );
       sidebar.appendChild(toolsGroup);
+    }
+    /** Paints pending writes without replacing a focused row or its drop target. */
+    paintFolderSave(row, folderId) {
+      const saving = (this.folderSaves.get(folderId) ?? 0) > 0;
+      row.classList.toggle("is-saving", saving);
+      row.setAttribute("aria-busy", String(saving));
+      row.querySelector(".atme-side__saving")?.remove();
+      if (saving) {
+        const label = document.createElement("span");
+        label.className = "atme-side__saving";
+        label.textContent = "Saving…";
+        row.appendChild(label);
+      }
+    }
+    /** Keeps feedback visible until the write and refreshed folder contents settle. */
+    async saveToFolder(ids, folderId) {
+      if (this.disposed) {
+        return;
+      }
+      const name = this.folders.find((folder) => folder.id === folderId)?.name ?? "folder";
+      const items = `${ids.length} item${ids.length === 1 ? "" : "s"}`;
+      const paint = () => {
+        this.sidebarEl?.querySelectorAll(`[data-folder-id="${folderId}"]`).forEach((row) => this.paintFolderSave(row, folderId));
+      };
+      const announce = (message, failed = false) => {
+        if (this.filingStatusEl) {
+          this.filingStatusEl.textContent = message;
+          this.filingStatusEl.classList.toggle("is-error", failed);
+        }
+      };
+      this.folderSaves.set(folderId, (this.folderSaves.get(folderId) ?? 0) + 1);
+      paint();
+      announce(`Saving ${items} into ${name}…`);
+      try {
+        await fileIntoFolder(ids, folderId);
+        if (this.disposed) {
+          return;
+        }
+        await Promise.all([
+          this.refreshFolders(),
+          ...this.query.folder > 0 || this.query.view === "unfiled" ? [this.runQuery()] : []
+        ]);
+        if (this.disposed) {
+          return;
+        }
+        const message = `Filed ${items} into ${name}.`;
+        announce(message);
+        getShell()?.showToast?.({ message });
+      } catch (error) {
+        if (this.disposed) {
+          return;
+        }
+        const message = `Could not file ${items} into ${name}. Try again.`;
+        announce(message, true);
+        getShell()?.notify?.({
+          title: message,
+          body: error instanceof Error ? error.message : "",
+          type: "error"
+        });
+      } finally {
+        const remaining = (this.folderSaves.get(folderId) ?? 1) - 1;
+        if (remaining > 0) {
+          this.folderSaves.set(folderId, remaining);
+        } else {
+          this.folderSaves.delete(folderId);
+        }
+        if (!this.disposed) {
+          paint();
+        }
+      }
     }
     async promptNewFolder() {
       const name = window.prompt("Folder name");
@@ -4816,10 +4884,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
             onChange: (value) => {
               const folder = Number(value);
               if (folder > 0) {
-                void fileIntoFolder(ids, folder).then(() => {
-                  getShell()?.showToast?.({ message: `Filed ${ids.length} items` });
-                  void this.refreshFolders();
-                });
+                void this.saveToFolder(ids, folder);
               }
             }
           })

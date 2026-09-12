@@ -107,3 +107,17 @@ Older shells without the framework keep the native callbacks. The legacy
 callbacks must never overwrite framework renderers when the runtime loaded
 through a different app first. Both paths use open-time params for cold opens;
 legacy broadcasts still support retargeting already-open native windows.
+
+## Folder filing feedback
+
+The explorer owns pending folder writes per mounted window. Sidebar drops,
+external drops into the current folder grid, and the bulk filing menu share
+one save path. The destination row shows a spinner, “Saving…” and `aria-busy`
+until the write and library refresh settle. A separate `role="status"` region
+announces progress and retains the success or failure message. Reduced-motion
+preferences disable the spinner animation while retaining the text.
+
+Pending counts are keyed by folder id, so sidebar repaint and overlapping
+drops do not clear feedback prematurely. Failed writes show an error and allow
+another attempt; folder counts are only refreshed from the server. Closing
+the window suppresses late UI updates without cancelling the server write.

@@ -107,6 +107,8 @@ class ExplorerApp {
 	private wizardOpen = false;
 	private bulkBar: HTMLElement | null = null;
 	private folderDropOffs: Array< () => void > = [];
+	private readonly folderSaves = new Map< number, number >();
+	private filingStatusEl: HTMLElement | null = null;
 
 	constructor( root: HTMLElement ) {
 		this.root = root;
@@ -161,6 +163,15 @@ class ExplorerApp {
 
 		gridHost.className = 'atme-gridhost';
 		main.appendChild( gridHost );
+
+		const filingStatus = document.createElement( 'div' );
+
+		filingStatus.className = 'atme-filing-status';
+		filingStatus.setAttribute( 'role', 'status' );
+		filingStatus.setAttribute( 'aria-live', 'polite' );
+		filingStatus.setAttribute( 'aria-atomic', 'true' );
+		main.appendChild( filingStatus );
+		this.filingStatusEl = filingStatus;
 
 		const status = document.createElement( 'div' );
 
@@ -328,16 +339,11 @@ class ExplorerApp {
 				}
 
 				if ( this.query.folder > 0 ) {
-					void fileIntoFolder( ids, this.query.folder ).then( () => {
-						getShell()?.showToast?.( {
-							message: `Filed ${ ids.length } item${ ids.length === 1 ? '' : 's' }`,
-						} );
-						void this.runQuery();
-						void this.refreshFolders();
-					} );
+					return this.saveToFolder( ids, this.query.folder );
 				} else {
 					void this.revealItem( ids[ 0 ] );
 				}
+				return;
 			},
 		} );
 
@@ -478,7 +484,7 @@ class ExplorerApp {
 	private paintSidebar(): void {
 		const sidebar = this.sidebarEl;
 
-		if ( ! sidebar ) {
+		if ( ! sidebar || this.disposed ) {
 			return;
 		}
 
@@ -546,6 +552,8 @@ class ExplorerApp {
 					folder.count
 				);
 
+				row.dataset.folderId = String( folder.id );
+				this.paintFolderSave( row, folder.id );
 				row.style.paddingInlineStart = `${ 8 + depth * 16 }px`;
 				foldersGroup.appendChild( row );
 
@@ -577,16 +585,7 @@ class ExplorerApp {
 								return;
 							}
 
-							void fileIntoFolder( ids, folder.id ).then( () => {
-								getShell()?.showToast?.( {
-									message: `Filed ${ ids.length } item${ ids.length === 1 ? '' : 's' } into ${ folder.name }`,
-								} );
-								void this.refreshFolders();
-
-								if ( this.query.folder > 0 || this.query.view === 'unfiled' ) {
-									void this.runQuery();
-								}
-							} );
+							return this.saveToFolder( ids, folder.id );
 						},
 					} )
 				);
@@ -683,6 +682,85 @@ class ExplorerApp {
 		);
 
 		sidebar.appendChild( toolsGroup );
+	}
+
+	/** Paints pending writes without replacing a focused row or its drop target. */
+	private paintFolderSave( row: HTMLElement, folderId: number ): void {
+		const saving = ( this.folderSaves.get( folderId ) ?? 0 ) > 0;
+
+		row.classList.toggle( 'is-saving', saving );
+		row.setAttribute( 'aria-busy', String( saving ) );
+		row.querySelector( '.atme-side__saving' )?.remove();
+		if ( saving ) {
+			const label = document.createElement( 'span' );
+
+			label.className = 'atme-side__saving';
+			label.textContent = 'Saving…';
+			row.appendChild( label );
+		}
+	}
+
+	/** Keeps feedback visible until the write and refreshed folder contents settle. */
+	private async saveToFolder( ids: number[], folderId: number ): Promise< void > {
+		if ( this.disposed ) {
+			return;
+		}
+		const name = this.folders.find( ( folder ) => folder.id === folderId )?.name ?? 'folder';
+		const items = `${ ids.length } item${ ids.length === 1 ? '' : 's' }`;
+		const paint = () => {
+			this.sidebarEl?.querySelectorAll< HTMLElement >( `[data-folder-id="${ folderId }"]` )
+				.forEach( ( row ) => this.paintFolderSave( row, folderId ) );
+		};
+		const announce = ( message: string, failed = false ) => {
+			if ( this.filingStatusEl ) {
+				this.filingStatusEl.textContent = message;
+				this.filingStatusEl.classList.toggle( 'is-error', failed );
+			}
+		};
+
+		this.folderSaves.set( folderId, ( this.folderSaves.get( folderId ) ?? 0 ) + 1 );
+		paint();
+		announce( `Saving ${ items } into ${ name }…` );
+		try {
+			await fileIntoFolder( ids, folderId );
+			if ( this.disposed ) {
+				return;
+			}
+			await Promise.all( [
+				this.refreshFolders(),
+				...( this.query.folder > 0 || this.query.view === 'unfiled' ? [ this.runQuery() ] : [] ),
+			] );
+			if ( this.disposed ) {
+				return;
+			}
+			const message = `Filed ${ items } into ${ name }.`;
+
+			announce( message );
+			getShell()?.showToast?.( { message } );
+		} catch ( error ) {
+			if ( this.disposed ) {
+				return;
+			}
+			const message = `Could not file ${ items } into ${ name }. Try again.`;
+
+			announce( message, true );
+			getShell()?.notify?.( {
+				title: message,
+				body: error instanceof Error ? error.message : '',
+				type: 'error',
+			} );
+		} finally {
+			const remaining = ( this.folderSaves.get( folderId ) ?? 1 ) - 1;
+
+			if ( remaining > 0 ) {
+				this.folderSaves.set( folderId, remaining );
+			} else {
+				this.folderSaves.delete( folderId );
+			}
+			if ( ! this.disposed ) {
+				paint();
+			}
+		}
 	}
 
 	private async promptNewFolder(): Promise< void > {
@@ -1142,10 +1220,7 @@ class ExplorerApp {
 						const folder = Number( value );
 
 						if ( folder > 0 ) {
-							void fileIntoFolder( ids, folder ).then( () => {
-								getShell()?.showToast?.( { message: `Filed ${ ids.length } items` } );
-								void this.refreshFolders();
-							} );
+							void this.saveToFolder( ids, folder );
 						}
 					},
 				} )

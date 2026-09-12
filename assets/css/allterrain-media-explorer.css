@@ -110,6 +110,49 @@
 	color: var( --os-ui-fg-muted, #666 );
 }
 
+/* Filing feedback stays on the destination while the request is pending. */
+.atme-side__row.is-saving .atme-side__count {
+	display: none;
+}
+
+.atme-side__row.is-saving .dashicons {
+	box-sizing: border-box;
+	flex-shrink: 0;
+	border: 2px solid currentColor;
+	border-inline-end-color: transparent;
+	border-radius: 50%;
+	animation: atme-folder-saving 0.8s linear infinite;
+}
+
+.atme-side__row.is-saving .dashicons::before {
+	content: none;
+}
+
+.atme-side__saving {
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.atme-filing-status:not(:empty) {
+	padding: 8px 12px;
+	border-block-start: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	background: var( --os-ui-accent-soft, rgba( 34, 113, 177, 0.1 ) );
+}
+
+.atme-filing-status.is-error {
+	color: var( --os-ui-danger, #b32d2e );
+}
+
+@keyframes atme-folder-saving {
+	to { transform: rotate( 360deg ); }
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.atme-side__row.is-saving .dashicons {
+		animation: none;
+	}
+}
+
 /* Main column ------------------------------------------------------------ */
 
 .atme__main {
