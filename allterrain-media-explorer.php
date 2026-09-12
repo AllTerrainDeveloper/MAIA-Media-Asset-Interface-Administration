@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       MAIA — Media Asset Interface & Administration
+ * Plugin Name:       MAIA — Media Library
  * Plugin URI:        https://github.com/AllTerrainDeveloper/MAIA-Media-Asset-Interface-Administration
- * Description:       MAIA (Media Asset Interface & Administration) — the media library WordPress should have shipped, as an OpenStation desktop app. Folders, collections and smart views; convert images between formats; replace files with restorable versions; a viewer that outclasses the attachment screen; a batch optimization wizard; and media you can drag — out of the window, into Gutenberg, onto a task card, across the desktop.
+ * Description:       Organize, view and optimize your WordPress media in OpenStation. Folders, collections, format conversion and restorable versions.
  * Version:           0.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
@@ -12,7 +12,7 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       allterrain-media-explorer
  *
- * MAIA — Media Asset Interface & Administration — is a media library built
+ * MAIA is a media library built
  * as an OpenStation application, part of the AllTerrain family. The name on
  * the tin changed; the machine names did not: the directory slug, text
  * domain, `atme_` prefixes, REST namespace and window ids keep their

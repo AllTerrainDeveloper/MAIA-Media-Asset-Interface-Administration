@@ -46,11 +46,11 @@ jobs:
       TAG: ${{ inputs.tag || github.ref_name }}
       # `secrets` is not a context step-`if`s may read, so the presence check
       # is precomputed here where it is.
-      HAS_SVN_CREDENTIALS: ${{ secrets.SVN_USERNAME != '' }}
+      HAS_SVN_CREDENTIALS: ${{ secrets.SVN_USERNAME != '' && secrets.SVN_PASSWORD != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
           persist-credentials: false
 
       - name: Set up Node
@@ -70,6 +70,10 @@ jobs:
       # rather than after the GitHub Release is already published.
       - name: Verify tag matches plugin version
         run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]]; then
+            echo "::error::Expected a vX.Y.Z tag or prerelease"
+            exit 1
+          fi
           tag="${TAG#v}"
           pkg=$(node -p "require('./package.json').version")
           header=$(awk '/^[[:space:]]*\*[[:space:]]*Version:/ { print $3; exit }' allterrain-media-explorer.php)
@@ -93,8 +97,20 @@ jobs:
       # Mounted inactive — see the note in ci.yml. `Requires Plugins:
       # desktop-mode` means WordPress will not activate this on a runner, which
       # has no OpenStation, and Plugin Check does not need it to be active.
+      - name: App Framework contract fixture
+        uses: actions/checkout@v4
+        with:
+          repository: WordPress/openstation
+          ref: 7545b530bf6ba420ebdd647a0d7e418a415d5215
+          path: .test-framework
+          sparse-checkout: includes/framework
+          persist-credentials: false
+
       - name: Start wp-env
         run: npm run env:start
+
+      - name: PHPUnit
+        run: npm run test:php
 
       # The gate. Plugin Check is what the WordPress.org review queue runs, so
       # failing here means the release would have been rejected -- better to

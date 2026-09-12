@@ -1,4 +1,4 @@
-# MAIA (Media Asset Interface & Administration) — developer docs
+# MAIA — developer docs
 
 > Branding note: the product name is **MAIA**; every machine identifier —
 > slug `allterrain-media-explorer`, text domain, `atme_` prefixes, `atme/v1`
@@ -21,6 +21,8 @@ to a hook without a change here ships a lie.
 | [javascript.md](javascript.md) | Bundles, drag payloads, broadcast topics, the config blob. |
 | [openstation.md](openstation.md) | Every shell surface the plugin registers, and how it degrades. |
 | [review-2026-09.md](review-2026-09.md) | Forms review lessons, MAIA fixes and validation. |
+| [releasing.md](releasing.md) | WordPress.org submission, release helpers, CI and listing assets. |
+| [artwork/](artwork/README.md) | AllTerrain design sources, font licenses and exports. |
 | [examples/](examples/) | Copy-paste recipes. |
 
 ## The one-paragraph tour

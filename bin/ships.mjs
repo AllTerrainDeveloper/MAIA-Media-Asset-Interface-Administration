@@ -27,6 +27,8 @@ export const EXCLUDED = new Set( [
 
 	// Developer documentation. `readme.txt` is the one users see, and it ships.
 	'README.md',
+	'AGENTS.md',
+	'docs',
 	'PLAN.md',
 
 	// Output of a packaging step.

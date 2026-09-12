@@ -1,6 +1,6 @@
-=== MAIA — Media Asset Interface & Administration ===
-Contributors: allterraindev
-Tags: media library, folders, webp, avif, openstation
+=== MAIA — Media Library ===
+Contributors: allterraindeveloper
+Tags: media library, folders, image optimization, webp, avif
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -9,16 +9,22 @@ Requires Plugins: desktop-mode
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-The media library WordPress should have shipped: folders, conversion, replace-in-place, versions, viewer and wizard on the OpenStation desktop.
+Organize, view and optimize your WordPress media with folders, collections, format conversion and restorable versions. Built for OpenStation.
 
 == Description ==
 
-MAIA (Media Asset Interface & Administration) is a media library built as a native window on the
-[OpenStation](https://wordpress.org/plugins/desktop-mode/) desktop. Everything
-the core Media Library does, plus everything it cannot:
+Your media, in good order.
+
+MAIA gives your WordPress media a home on the
+[OpenStation](https://wordpress.org/plugins/desktop-mode/) desktop. Find an image,
+file it into a folder, open it in the viewer, or prepare it for your next post —
+all from the same window. Made by AllTerrain, the developer behind AllTerrain
+Forms and AllTerrain Photo Editor.
 
 * **Folders and collections** — a real tree, drag tiles to file them, save
-  any search as a live collection. Smart views for unattached, unfiled,
+  any search as a live collection. Create top-level folders or subfolders with
+  inline forms. Filing shows progress and a saved or retryable error message.
+  Deleting a folder keeps its media and moves its children up one level. Smart views for unattached, unfiled,
   missing-alt, converted and duplicate files.
 * **Convert between formats** — JPEG, PNG, WebP, AVIF and GIF, as a copy or
   in place, one file or a whole selection. The server converts with the
@@ -44,12 +50,71 @@ the core Media Library does, plus everything it cannot:
 
 The classic Media Library is untouched, and deactivating removes every
 surface. Uninstalling removes folders, collections and version files;
-your media is never touched.
+your current media attachments and files stay in the Media Library.
 
 **OpenStation is required** (the plugin dependency slug is `desktop-mode`).
 The explorer is a native desktop window; without the shell, your folders
 and data are safe and a signpost page under Media explains where the
 product lives.
+
+== Installation ==
+
+1. Install and activate [OpenStation](https://wordpress.org/plugins/desktop-mode/).
+2. Upload the MAIA ZIP through Plugins > Add New > Upload Plugin, then activate it.
+3. Enable OpenStation for your user from the WordPress admin bar.
+4. Open MAIA from the desktop dock or its desktop shortcut. Your existing media is already there.
+
+Requires WordPress 6.0 or later and PHP 7.4 or later. Available conversion formats
+depend on the image libraries installed on your host and your browser's capabilities.
+
+== Frequently Asked Questions ==
+
+= Do I need OpenStation? =
+
+Yes. MAIA's interface is a native OpenStation app. Install OpenStation first;
+its WordPress.org dependency slug is desktop-mode.
+
+= Are folders physical directories? =
+
+No. Folders organize attachments with a WordPress taxonomy. Filing an image does
+not move its file or change its URL. Create a top-level folder beside any existing
+root, or select a folder and choose New subfolder to nest it.
+
+= What happens when I delete a folder? =
+
+Only the folder is deleted, after an OpenStation confirmation. Its media remains
+in the library and its child folders move up one level.
+
+= Does replacement keep existing links working? =
+
+Same-format replacements keep the attachment ID and URL. Changing format changes
+the file extension and URL. MAIA does not rewrite existing embedded URLs; review
+those links after converting in place. Previous originals are kept as versions.
+
+= Can I convert HEIC and AVIF on any host? =
+
+HEIC intake requires an Imagick installation that can read HEIC. Server-side
+conversion uses the formats available through Imagick or GD. For supported
+fallbacks, MAIA uses browser canvas encoding or its bundled AVIF WebAssembly codec.
+
+= Will the wizard delete duplicates or generate alt text automatically? =
+
+No. The wizard reports duplicates for you to review and only applies the fixes
+you select. Alt text needs a human review. Optional AI suggestions require a
+separate, explicit confirmation for each image; see External services below.
+
+= What happens if I deactivate or uninstall MAIA? =
+
+Deactivation leaves your data in place. Uninstall removes MAIA's folder terms,
+saved collections, settings and saved version files. Current media attachments
+and their active files remain. Export any versions you want to keep first.
+
+== Screenshots ==
+
+1. Browse and search your library, with folders, smart views and an inspector for image details and alt text.
+2. Open a photo in the dedicated viewer, with zoom controls and an optional information drawer.
+3. Create a top-level folder using an inline form with an explicit destination, even while another folder is selected.
+4. Review the Optimization Wizard's findings before choosing which fixes to apply.
 
 == External services ==
 
@@ -77,4 +142,8 @@ WebAssembly and bundled unmodified.
 == Changelog ==
 
 = 0.1.0 =
-* First release.
+* First release of MAIA for the OpenStation desktop.
+* Organize media with nested folders, saved collections and smart views.
+* View, convert and replace images with restorable original versions.
+* Review media usage and run a resumable optimization wizard.
+* File media with progress feedback, create folders inline, and delete folders while preserving media.

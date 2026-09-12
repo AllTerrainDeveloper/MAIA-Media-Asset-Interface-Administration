@@ -1,123 +1,159 @@
 <div align="center">
 
-# MAIA — Media Asset Interface & Administration
+![MAIA — Your media, in good order. By AllTerrain.](.wordpress-org/banner-1544x500.png)
 
-**The media library WordPress should have shipped, built as a native
-[OpenStation](https://github.com/WordPress/openstation) desktop app.
-Part of the AllTerrain family.**
+# MAIA
+
+**A home for every image. Built for WordPress and OpenStation.**
 
 [![WordPress 6.0+](https://img.shields.io/badge/WordPress-6.0%2B-21759b)](https://wordpress.org)
 [![PHP 7.4+](https://img.shields.io/badge/PHP-7.4%2B-777bb4)](https://php.net)
-[![Requires OpenStation](https://img.shields.io/badge/requires-OpenStation-c1622f)](https://github.com/WordPress/openstation)
-[![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-60%20PHP%20%2B%2099%20JS-brightgreen)](#testing)
+[![Requires OpenStation](https://img.shields.io/badge/requires-OpenStation-b95b36)](https://wordpress.org/plugins/desktop-mode/)
+[![License](https://img.shields.io/badge/license-GPL--2.0--or--later-718967)](LICENSE)
 
-![The MAIA library window on the OpenStation desktop](.github/screenshots/library.png)
+Find it. File it. Make it ready for your next post.
+
+[Get started](#get-started) · [Screenshots](#a-look-around) · [Developers](#development) · [Releasing](docs/releasing.md)
 
 </div>
 
----
+MAIA brings folders, a dedicated image viewer and practical media tools to the
+[OpenStation](https://wordpress.org/plugins/desktop-mode/) desktop. Your existing
+WordPress library is already there: organize it, inspect it, convert an image or
+restore a previous version without leaving your workspace.
 
-## What it is
-
-MAIA is a media library that opens as a window on the OpenStation desktop and does
-what core's grid cannot: **folders** and saved collections, **format
-conversion** (JPEG/PNG/WebP/AVIF, server-side via Imagick/GD or in the
-browser via canvas + WASM), **replace-in-place** with restorable versions (format changes also change the URL),
-**HEIC intake** for iPhone photos, a resumable **Optimization Wizard**, and
-an honest answer to *"where is this file used?"* before anything is
-deleted.
-
-And because it is a **native window** — the shell's own DOM, not an iframe
-— a photo lifts out of the grid on the shell's drag pipeline and lands in a
-Gutenberg post, on an AllTerrain Work card, in an AllTerrain Fields image
-field, or in a wallpaper folder. The payload is byte-for-byte the shape WP
-Explorer emits, so every existing drop target accepts it with zero new
-code.
+Made by **AllTerrain**, alongside [AllTerrain Forms](https://wordpress.org/plugins/allterrain-forms/)
+and [AllTerrain Photo Editor](https://wordpress.org/plugins/allterrain-photo-editor/).
+Free software, with no license keys or author-operated cloud service.
 
 ## A look around
 
-**Folders.** “New top-level folder” creates a folder beside Products or any
-other root, even when a folder is selected. Select a folder for “New subfolder”
-or “Delete folder…”. Naming happens inline with OpenStation controls and the
-destination shown before saving. Deleting a folder keeps its media in the
-library and moves its subfolders up one level.
+### A library you can put in order
 
-**The viewer.** Double-click anything — a grid tile, a file on the wallpaper
-— and the photo opens full bleed: wheel/pinch zoom with panning, fit/1:1,
-← / → walks the library, and the ⓘ drawer is the entire inspector, from
-EXIF to version rollback.
+Drag images into folders and see when they finish saving. Build a folder tree,
+keep searches as live collections, or jump to unfiled media, missing alt text,
+converted copies and duplicates. The inspector keeps metadata and image tools
+close to the selected file.
 
-<img src=".github/screenshots/viewer.png" alt="The MAIA Viewer: a photo on a dark stage with the info drawer open" width="820">
+![MAIA library with property images and the inspector open](.wordpress-org/screenshot-1.png)
 
-**The wizard.** Scan the library, see what could be better — legacy formats,
-missing alt text, duplicates, oversized originals — pick the remedies, and
-watch a resumable batch fix them. Nothing is deleted, everything converted
-in place keeps its original as a version.
+### Give the image some room
 
-<img src=".github/screenshots/wizard.png" alt="The Optimization Wizard's findings step" width="820">
+Double-click a photo to open the viewer. Zoom, pan, switch between fit and 1:1,
+and move through the library with the arrow keys. Open the info drawer for
+metadata, conversion and version tools.
 
-**Windows that know each other.** Open a photo from the library and the
-desktop draws the tie: the viewer declares itself a child of the library
-window, and OpenStation's relations engine connects them.
+![A photo open in MAIA Viewer](.wordpress-org/screenshot-2.png)
 
-<img src=".github/screenshots/relations.png" alt="A relation line connecting the MAIA viewer window to the library window" width="820">
+### Folders with a clear destination
 
-## The decisions
+**New top-level folder** creates a sibling of Products or any other root, even
+while a folder is selected. **New subfolder** goes inside the selected folder.
+Names are entered inline using OpenStation controls, with validation and saving
+feedback. Deleting a folder preserves its media and moves child folders up one
+level.
 
-**The name is MAIA; the identifiers are not.** The directory slug, text
-domain, `atme_` prefixes, REST namespace (`atme/v1`) and window ids keep
-their original `allterrain-media-explorer` spellings — renaming machine
-identifiers breaks session restore, file associations, and every site that
-installed under them, and buys a rename nothing.
+![Inline folder creation showing the top-level destination](.wordpress-org/screenshot-3.png)
 
-**Everything is a post.** An attachment already is one; folders are a
-taxonomy on it, collections are saved-query posts, versions are meta
-pointing at real files. No tables, and uninstall removes every trace
-without touching a single attachment.
+### A thoughtful library tidy-up
 
-**OpenStation is required.** `Requires Plugins: desktop-mode` — the slug is
-the shell's directory name, not its product name. The product *is* the drag
-surface; there is no second, lesser UI to rot. Without the shell the data
-layer, REST namespace and conversion engine still work, and a signpost page
-says where the product lives.
+The Optimization Wizard scans for oversized originals, legacy formats, missing
+alt text and duplicate files. Review its findings and choose what to fix. Batches
+can resume, and converted originals are kept as versions. Duplicates are left for
+a human decision; AI alt-text drafting requires a separate confirmation.
 
-**Nothing destroys pixels without a copy.** Convert makes a sibling unless
-asked to replace; replace stashes a version; rollback goes through replace,
-so undo has an undo; the wizard never deletes on its own.
+![Optimization Wizard findings and the choice of fixes](.wordpress-org/screenshot-4.png)
 
-## Running it
+## More in the toolbox
+
+- **Format conversion:** JPEG, PNG, WebP, AVIF and GIF where supported. Use your
+  host's Imagick/GD or supported browser fallbacks, including bundled AVIF WASM.
+- **HEIC intake:** convert iPhone photos to JPEG when the host's Imagick can read HEIC.
+- **Restorable versions:** replace an image while retaining its previous original.
+  Same-format replacements keep the URL. **Changing format changes the URL**;
+  existing embedded links may need updating.
+- **Usage information:** see detected references in posts and settings before
+  deleting an image. Plugins can report additional usage through hooks.
+- **Desktop drag and drop:** move media into compatible OpenStation targets,
+  including Gutenberg and other AllTerrain apps.
+- **Optional AI alt text:** explicitly send one image's URL, title and caption to
+  the AI provider configured in OpenStation, then review the draft. See the
+  [external-services disclosure](readme.txt).
+
+## Get started
+
+1. Install and activate [OpenStation](https://wordpress.org/plugins/desktop-mode/).
+2. Upload `allterrain-media-explorer.zip` through **Plugins → Add New → Upload Plugin**
+   and activate MAIA.
+3. Enable OpenStation from the admin bar and open **MAIA** from its dock or shortcut.
+
+Requires **WordPress 6.0+** and **PHP 7.4+**. The classic Media Library remains
+available. Folder membership does not move files or change their URLs.
+Deactivation preserves data; uninstall removes MAIA's folders, collections,
+settings and saved version files, while retaining current media attachments.
+
+The initial WordPress.org submission ZIP is built locally using the commands
+below. Directory approval and the final SVN slug must be confirmed before enabling
+WordPress.org deployment.
+
+## Development
 
 ```bash
-npm install
-npm run build          # builds explorer/shell/codec bundles + deploys to a sibling QA checkout
-npm run dev            # watch mode for the explorer bundle
+npm ci
+npm run build:bundles    # build explorer, shell and codec, readable + minified
+npm run deploy          # mirror to the sibling Docker QA checkout on port 8889
+npm run dev             # watch/rebuild the explorer bundle
 npm run typecheck
-npm test               # vitest
-npm run test:php       # PHPUnit in the QA site's container
-npm run plugin:package # dist/allterrain-media-explorer.zip
+npm test
+npm run test:php         # PHPUnit in the QA container or wp-env
+npm run plugin:package  # checks/builds and creates dist/allterrain-media-explorer.zip
 ```
 
-No Composer anywhere: PHP dependencies are WordPress plus the host's own
-Imagick/GD extensions, probed at runtime; bundled third-party code includes exifr (MIT) and [jSquash](https://github.com/jamsinclair/jSquash)'s AVIF encoder
-(Apache-2.0, the Squoosh codecs), compiled to WASM and loaded lazily.
+`npm run build` combines the bundle build and local deployment. Sources are
+TypeScript with a plugin-local Vite build. WordPress supplies the PHP APIs; there
+is no production Composer dependency. Bundled JavaScript includes exifr (MIT)
+and jSquash's AVIF encoder (Apache-2.0); notices ship in `assets/licenses/`.
 
-## For developers
+### Testing
 
-`docs/` is the contract: [architecture](docs/architecture.md), every
-[hook](docs/hooks-reference.md), the [JS surface](docs/javascript.md), the
-[OpenStation integration](docs/openstation.md), and copy-paste
-[recipes](docs/examples/) — accept a drop, emit a payload, add a smart
-view, report your plugin's media usage.
+Vitest covers the interface and request lifecycle. PHP integration tests cover
+the WordPress data layer and the real OpenStation App Framework. `npm run test:php`
+fails if no test backend is available; see [test setup](docs/releasing.md#local-checks)
+for wp-env. CI uses a pinned OpenStation framework fixture. The local integration
+site is **http://localhost:8889**.
+
+### Releases and artwork
+
+```bash
+npm run artwork:build            # export the four directory banner/icon PNGs
+npm run plugin:check             # WordPress Plugin Check (needs wp-env)
+npm run plugin:release           # build, JS/PHP tests, Plugin Check and ZIP; does not publish
+npm run bump-version -- 0.1.1    # update version files only; does not commit or tag
+npm run release -- 0.1.1         # publish from main after changelog review and green CI
+```
+
+The release helpers follow the same workflow as AllTerrain Photo Editor. Tag
+releases attach the ZIP on GitHub; stable tags also deploy to WordPress.org once
+approval and SVN credentials are in place. See [the release guide](docs/releasing.md)
+for first submission, retries and credentials. Listing artwork and screenshots
+are staged separately in `dist/assets/`, never included in the plugin ZIP.
+
+The cream grid, serif wordmark and terracotta/sage palette follow the AllTerrain
+family. [Editable artwork and font licenses](docs/artwork/README.md) are included.
+The screenshots show the real MAIA interface on the local demo site.
+
+### Plugin integration
+
+MAIA uses OpenStation's **App Framework**, with native registration fallback on
+older shells. The product name is MAIA; the existing `allterrain-media-explorer`
+slug, text domain, `atme_` prefixes and window identifiers remain stable.
+
+Start with [architecture](docs/architecture.md), [PHP hooks](docs/hooks-reference.md),
+[JavaScript](docs/javascript.md), [OpenStation integration](docs/openstation.md)
+and [examples](docs/examples/). The [migration and review](docs/review-2026-09.md)
+records the review fixes and known limits.
 
 ## License
 
-GPL-2.0-or-later.
-
-
-The current shell integration uses OpenStation's **App Framework**, with native
-fallback on older shells. See [the migration and review](docs/review-2026-09.md).
-`npm run test:php` fails when no test backend is running. App contract tests use
-the actual installed OpenStation framework; `ATME_FRAMEWORK_AUTOLOAD` can point
-to another copy inside the PHP environment. CI checks out a pinned framework
-fixture. Local deployment targets the Docker QA site at **http://localhost:8889**.
+[GPL-2.0-or-later](LICENSE). Font licenses and artwork provenance are documented
+in [docs/artwork](docs/artwork/README.md).
