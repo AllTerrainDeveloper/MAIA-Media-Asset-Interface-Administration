@@ -36,3 +36,14 @@ duplicates, folders. The explorer itself is a **native OpenStation window**;
 its tiles emit the shell's own `shortcut` drag payload with a
 `bridgePayload`, which is why drops into Gutenberg, kanban cards and image
 fields work without those plugins knowing this one exists.
+
+## Testing and release maintenance
+
+Vitest covers interface behavior and request lifecycles. PHP integration tests
+cover the WordPress data layer and the real OpenStation App Framework. The PHP
+runner fails if no test backend is available; CI uses a pinned framework fixture.
+The local Docker integration site is http://localhost:8889.
+
+See [local checks and release commands](releasing.md#local-checks) for test
+backends, version bumps and publishing, and [artwork maintenance](artwork/README.md)
+for banner/icon exports and screenshot requirements.

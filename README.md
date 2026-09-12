@@ -1,5 +1,3 @@
-<div align="center">
-
 ![MAIA — Your media, in good order. By AllTerrain.](.wordpress-org/banner-1544x500.png)
 
 # MAIA
@@ -16,8 +14,6 @@
 Find it. File it. Make it ready for your next post.
 
 [Get started](#get-started) · [Screenshots](#a-look-around) · [Developers](#development) · [Releasing](docs/releasing.md)
-
-</div>
 
 MAIA brings folders, a dedicated image viewer and practical media tools to the
 [OpenStation](https://wordpress.org/plugins/desktop-mode/) desktop. Your existing
@@ -116,34 +112,9 @@ TypeScript with a plugin-local Vite build. WordPress supplies the PHP APIs; ther
 is no production Composer dependency. Bundled JavaScript includes exifr (MIT)
 and jSquash's AVIF encoder (Apache-2.0); notices ship in `assets/licenses/`.
 
-### Testing
-
-Vitest covers the interface and request lifecycle. PHP integration tests cover
-the WordPress data layer and the real OpenStation App Framework. `npm run test:php`
-fails if no test backend is available; see [test setup](docs/releasing.md#local-checks)
-for wp-env. CI uses a pinned OpenStation framework fixture. The local integration
-site is **http://localhost:8889**.
-
-### Releases and artwork
-
-```bash
-npm run artwork:build            # export the four directory banner/icon PNGs
-npm run artwork:check            # compare PNGs to sources without changing files
-npm run plugin:check             # WordPress Plugin Check (needs wp-env)
-npm run plugin:release           # build, JS/PHP tests, Plugin Check and ZIP; does not publish
-npm run bump-version -- 0.1.1    # update version files only; does not commit or tag
-npm run release -- 0.1.1         # publish from main after changelog review and green CI
-```
-
-The release helpers follow the same workflow as AllTerrain Photo Editor. Tag
-releases attach the ZIP on GitHub; stable tags also deploy to WordPress.org once
-approval and SVN credentials are in place. See [the release guide](docs/releasing.md)
-for first submission, retries and credentials. Listing artwork and screenshots
-are staged separately in `dist/assets/`, never included in the plugin ZIP.
-
-The cream grid, serif wordmark and terracotta/sage palette follow the AllTerrain
-family. [Editable artwork and font licenses](docs/artwork/README.md) are included.
-The screenshots show the real MAIA interface on the local demo site.
+Testing, release commands and artwork maintenance are documented in the
+[developer guide](docs/README.md), [release guide](docs/releasing.md) and
+[artwork sources](docs/artwork/README.md).
 
 ### Plugin integration
 
