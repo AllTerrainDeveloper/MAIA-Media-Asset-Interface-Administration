@@ -41,7 +41,7 @@ function atme_folder_tree() {
 		// Use the media collection's default status and read permission rules.
 		// Batch the tree together, avoiding a count query per folder or loading
 		// the whole library (including attachment metadata) into memory at once.
-		$controller = new WP_REST_Attachments_Controller();
+		$controller = new WP_REST_Attachments_Controller( 'attachment' );
 		$page       = 1;
 		do {
 			$query = new WP_Query(
