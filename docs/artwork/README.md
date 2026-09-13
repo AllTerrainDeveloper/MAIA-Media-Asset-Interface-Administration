@@ -7,7 +7,7 @@ badge**; the banner uses a stack of illustrated media cards.
 
 The product name is **MAIA**, short for **Media Asset Interface & Administration**.
 The wordmark stays MAIA; the readmes and WordPress.org listing explain its full
-meaning. “By AllTerrain” identifies the developer. The machine slug stays unchanged.
+meaning. “By AllTerrainDeveloper” identifies the developer. The machine slug stays unchanged.
 
 ## Edit and export
 
@@ -35,7 +35,7 @@ packager checks exact artwork dimensions, file sizes and screenshot captions.
 
 ## Sources and licenses
 
-- Original MAIA SVG geometry and layout: Daniel Lopez / AllTerrain, 2026,
+- Original MAIA SVG geometry and layout: Daniel Lopez / AllTerrainDeveloper, 2026,
   GPL-2.0-or-later, like this repository. No stock artwork is used in the banner
   or icon.
 - **Fraunces**, by the Fraunces Project Authors: SIL Open Font License 1.1.

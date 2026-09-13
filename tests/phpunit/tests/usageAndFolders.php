@@ -131,6 +131,81 @@ class Tests_ATME_Usage_And_Folders extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::atme_folder_tree
+	 */
+	public function test_folder_counts_match_media_for_unattached_and_draft_parent_files() {
+		$folder = atme_create_folder( 'Products' );
+		foreach ( array( 0, self::factory()->post->create( array( 'post_status' => 'publish' ) ), self::factory()->post->create( array( 'post_status' => 'draft' ) ) ) as $parent ) {
+			$attachment = self::factory()->attachment->create( array( 'post_parent' => $parent, 'post_status' => 'inherit' ) );
+			atme_file_into_folder( array( $attachment ), $folder );
+		}
+		$request = new WP_REST_Request( 'GET', '/wp/v2/media' );
+		$request->set_param( 'atme-folders', $folder );
+		$response = rest_do_request( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 3, $response->get_data() );
+		$rows = array_column( atme_folder_tree(), null, 'id' );
+		$this->assertSame( count( $response->get_data() ), $rows[ $folder ]['count'] );
+	}
+
+	/**
+	 * @covers ::atme_folder_tree
+	 */
+	public function test_folder_counts_are_direct_and_refresh_after_membership_and_status_changes() {
+		$folder = atme_create_folder( 'Products' );
+		$child  = atme_create_folder( 'Summer', $folder );
+		$empty  = atme_create_folder( 'Empty' );
+		$first  = self::factory()->attachment->create( array( 'post_status' => 'inherit' ) );
+		$second = self::factory()->attachment->create( array( 'post_status' => 'inherit' ) );
+		atme_file_into_folder( array( $first ), $folder );
+		atme_file_into_folder( array( $first, $second ), $child );
+		$rows = array_column( atme_folder_tree(), null, 'id' );
+		$this->assertSame( 1, $rows[ $folder ]['count'] );
+		$this->assertSame( 2, $rows[ $child ]['count'] );
+		$this->assertSame( 0, $rows[ $empty ]['count'] );
+		atme_unfile_from_folder( array( $first ), $folder );
+		wp_update_post( array( 'ID' => $second, 'post_status' => 'trash' ) );
+		$rows = array_column( atme_folder_tree(), null, 'id' );
+		$this->assertSame( 0, $rows[ $folder ]['count'] );
+		$this->assertSame( 1, $rows[ $child ]['count'] );
+		wp_update_post( array( 'ID' => $second, 'post_status' => 'inherit' ) );
+		$rows = array_column( atme_folder_tree(), null, 'id' );
+		$this->assertSame( 2, $rows[ $child ]['count'] );
+	}
+
+	/**
+	 * @covers ::atme_folder_tree
+	 */
+	public function test_folder_counts_include_memberships_beyond_the_first_batch() {
+		$folder = atme_create_folder( 'Large folder' );
+		$files  = self::factory()->attachment->create_many( 501, array( 'post_status' => 'inherit' ) );
+		atme_file_into_folder( $files, $folder );
+		$rows = array_column( atme_folder_tree(), null, 'id' );
+		$this->assertSame( 501, $rows[ $folder ]['count'] );
+	}
+
+	/**
+	 * @covers ::atme_folder_tree
+	 */
+	public function test_folder_counts_do_not_reveal_media_hidden_by_rest_read_permissions() {
+		$owner  = get_current_user_id();
+		$folder = atme_create_folder( 'Private project' );
+		$parent = self::factory()->post->create( array( 'post_status' => 'private', 'post_author' => $owner ) );
+		$file   = self::factory()->attachment->create( array( 'post_status' => 'inherit', 'post_parent' => $parent, 'post_author' => $owner ) );
+		atme_file_into_folder( array( $file ), $folder );
+		$rows = array_column( atme_folder_tree(), null, 'id' );
+		$this->assertSame( 1, $rows[ $folder ]['count'] );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$request = new WP_REST_Request( 'GET', '/wp/v2/media' );
+		$request->set_param( 'atme-folders', $folder );
+		$response = rest_do_request( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 0, $response->get_data() );
+		$rows = array_column( atme_folder_tree(), null, 'id' );
+		$this->assertSame( 0, $rows[ $folder ]['count'] );
+	}
+
+	/**
 	 * @covers ::atme_register_content_model
 	 */
 	public function test_folder_rest_deletion_keeps_media_and_promotes_children() {

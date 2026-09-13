@@ -15,6 +15,10 @@ defined( 'ABSPATH' ) || exit;
 /**
  * The folder tree, shaped for the sidebar.
  *
+ * Counts cover readable media filed directly in each folder, independently of
+ * the active search. Core term counts use publishing rules that can exclude
+ * unattached media and attachments whose parent is a draft.
+ *
  * @since 0.1.0
  *
  * @return array[] Flat rows of {id, name, parent, count}; the client nests them.
@@ -31,6 +35,51 @@ function atme_folder_tree() {
 		return array();
 	}
 
+	$counts = array_fill_keys( wp_list_pluck( $terms, 'term_id' ), 0 );
+
+	if ( $terms ) {
+		// Use the media collection's default status and read permission rules.
+		// Batch the tree together, avoiding a count query per folder or loading
+		// the whole library (including attachment metadata) into memory at once.
+		$controller = new WP_REST_Attachments_Controller( 'attachment' );
+		$page       = 1;
+		do {
+			$query = new WP_Query(
+				array(
+					'post_type'              => 'attachment',
+					'post_status'            => 'inherit',
+					'posts_per_page'         => 500,
+					'paged'                  => $page++,
+					'orderby'                => 'ID',
+					'order'                  => 'ASC',
+					'no_found_rows'          => true,
+					'update_post_meta_cache' => false,
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Indexed folder membership is required; read in 500-item batches without metadata or total-row queries.
+					'tax_query'              => array(
+						array(
+							'taxonomy' => ATME_FOLDER_TAX,
+							'operator' => 'EXISTS',
+						),
+					),
+				)
+			);
+			foreach ( $query->posts as $attachment ) {
+				if ( ! $controller->check_read_permission( $attachment ) ) {
+					continue;
+				}
+				$memberships = get_the_terms( $attachment, ATME_FOLDER_TAX );
+				if ( ! $memberships || is_wp_error( $memberships ) ) {
+					continue;
+				}
+				foreach ( $memberships as $membership ) {
+					if ( isset( $counts[ $membership->term_id ] ) ) {
+						++$counts[ $membership->term_id ];
+					}
+				}
+			}
+		} while ( 500 === $query->post_count );
+	}
+
 	$rows = array();
 
 	foreach ( $terms as $term ) {
@@ -38,7 +87,7 @@ function atme_folder_tree() {
 			'id'     => (int) $term->term_id,
 			'name'   => $term->name,
 			'parent' => (int) $term->parent,
-			'count'  => (int) $term->count,
+			'count'  => $counts[ $term->term_id ],
 		);
 	}
 

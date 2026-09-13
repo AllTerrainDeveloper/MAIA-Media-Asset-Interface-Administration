@@ -108,6 +108,21 @@ callbacks must never overwrite framework renderers when the runtime loaded
 through a different app first. Both paths use open-time params for cold opens;
 legacy broadcasts still support retargeting already-open native windows.
 
+## Folder counts
+
+The sidebar `count` in `GET /atme/v1/folders` is the number of readable media
+attachments filed **directly** in that folder. It includes unattached files and
+files belonging to draft posts when the current user can read them, and excludes
+trashed files and media hidden by WordPress REST read permissions. Child-folder
+media is counted only in its own folders; a file assigned to multiple folders
+counts once in each. Search and type filters narrow the grid, not these totals.
+
+Counts are computed from current attachment membership in batches using the
+media collection's `inherit` status and WordPress's attachment REST controller
+read checks. They do not use WordPress's stored taxonomy count, whose publication
+rules can omit media shown in the library. Existing sites need no recount or
+migration; the next folder-tree request returns the corrected totals.
+
 ## Folder filing feedback
 
 The explorer owns pending folder writes per mounted window. Sidebar drops,

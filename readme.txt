@@ -19,7 +19,7 @@ MAIA stands for **Media Asset Interface & Administration**. It gives your
 WordPress media a home on the
 [OpenStation](https://wordpress.org/plugins/desktop-mode/) desktop. Find an image,
 file it into a folder, open it in the viewer, or prepare it for your next post —
-all from the same window. Made by AllTerrain, the developer behind AllTerrain
+all from the same window. Made by AllTerrainDeveloper, the developer behind AllTerrain
 Forms and AllTerrain Photo Editor.
 
 * **Folders and collections** — a real tree, drag tiles to file them, save
