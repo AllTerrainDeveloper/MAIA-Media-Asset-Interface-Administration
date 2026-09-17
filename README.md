@@ -1,6 +1,6 @@
-![MAIA — Your media, in good order. By AllTerrainDeveloper.](.wordpress-org/banner-1544x500.png)
+![AllTerrain MAIA — Your media, in good order. By AllTerrainDeveloper.](.wordpress-org/banner-1544x500.png)
 
-# MAIA
+# AllTerrain MAIA
 
 *Media Asset Interface & Administration*
 
@@ -15,7 +15,7 @@ Find it. File it. Make it ready for your next post.
 
 [Get started](#get-started) · [Screenshots](#a-look-around) · [Developers](#development) · [Releasing](docs/releasing.md)
 
-MAIA brings folders, a dedicated image viewer and practical media tools to the
+AllTerrain MAIA brings folders, a dedicated image viewer and practical media tools to the
 [OpenStation](https://wordpress.org/plugins/desktop-mode/) desktop. Your existing
 WordPress library is already there: organize it, inspect it, convert an image or
 restore a previous version without leaving your workspace.
@@ -33,7 +33,7 @@ keep searches as live collections, or jump to unfiled media, missing alt text,
 converted copies and duplicates. The inspector keeps metadata and image tools
 close to the selected file.
 
-![MAIA library with property images and the inspector open](.wordpress-org/screenshot-1.png)
+![AllTerrain MAIA library with property images and the inspector open](.wordpress-org/screenshot-1.png)
 
 ### Give the image some room
 
@@ -41,7 +41,7 @@ Double-click a photo to open the viewer. Zoom, pan, switch between fit and 1:1,
 and move through the library with the arrow keys. Open the info drawer for
 metadata, conversion and version tools.
 
-![A photo open in MAIA Viewer](.wordpress-org/screenshot-2.png)
+![A photo open in AllTerrain MAIA Viewer](.wordpress-org/screenshot-2.png)
 
 ### Folders with a clear destination
 
@@ -81,16 +81,16 @@ a human decision; AI alt-text drafting requires a separate confirmation.
 ## Get started
 
 1. Install and activate [OpenStation](https://wordpress.org/plugins/desktop-mode/).
-2. Upload `allterrain-media-explorer.zip` through **Plugins → Add New → Upload Plugin**
-   and activate MAIA.
-3. Enable OpenStation from the admin bar and open **MAIA** from its dock or shortcut.
+2. Upload `allterrain-maia.zip` through **Plugins → Add New → Upload Plugin**
+   and activate AllTerrain MAIA.
+3. Enable OpenStation from the admin bar and open **AllTerrain MAIA** from its dock or shortcut.
 
 Requires **WordPress 6.0+** and **PHP 7.4+**. The classic Media Library remains
 available. Folder membership does not move files or change their URLs.
-Deactivation preserves data; uninstall removes MAIA's folders, collections,
+Deactivation preserves data; uninstall removes AllTerrain MAIA's folders, collections,
 settings and saved version files, while retaining current media attachments.
 
-The initial WordPress.org submission ZIP is built locally using the commands
+The WordPress.org release ZIP is built locally using the commands
 below. Directory approval and the final SVN slug must be confirmed before enabling
 WordPress.org deployment.
 
@@ -104,7 +104,7 @@ npm run dev             # watch/rebuild the explorer bundle
 npm run typecheck
 npm test
 npm run test:php         # PHPUnit in the QA container or wp-env
-npm run plugin:package  # checks/builds and creates dist/allterrain-media-explorer.zip
+npm run plugin:package  # checks/builds and creates dist/allterrain-maia.zip
 ```
 
 `npm run build` combines the bundle build and local deployment. Sources are
@@ -118,9 +118,10 @@ Testing, release commands and artwork maintenance are documented in the
 
 ### Plugin integration
 
-MAIA uses OpenStation's **App Framework**, with native registration fallback on
-older shells. The product name is MAIA; the existing `allterrain-media-explorer`
-slug, text domain, `atme_` prefixes and window identifiers remain stable.
+AllTerrain MAIA uses OpenStation's **App Framework**, with native registration fallback on
+older shells. The approved WordPress.org package slug and text domain are
+`allterrain-maia`. The `atme_` prefixes, REST namespace and existing
+window identifiers remain stable.
 
 Start with [architecture](docs/architecture.md), [PHP hooks](docs/hooks-reference.md),
 [JavaScript](docs/javascript.md), [OpenStation integration](docs/openstation.md)

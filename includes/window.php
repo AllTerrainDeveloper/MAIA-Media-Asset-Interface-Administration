@@ -47,10 +47,10 @@ function atme_missing_shell_notice() {
 
 	printf(
 		'<div class="notice notice-warning"><p><strong>%1$s</strong> %2$s</p></div>',
-		esc_html__( 'MAIA needs OpenStation.', 'allterrain-media-explorer' ),
+		esc_html__( 'AllTerrain MAIA needs OpenStation.', 'allterrain-maia' ),
 		esc_html__(
-			'MAIA is a desktop app: it opens as a window on the OpenStation desktop, and dragging media anywhere runs on the shell’s pointer pipeline. Without OpenStation active, your folders and collections are safe but there is nowhere to open them.',
-			'allterrain-media-explorer'
+			'AllTerrain MAIA is a desktop app: it opens as a window on the OpenStation desktop, and dragging media anywhere runs on the shell’s pointer pipeline. Without OpenStation active, your folders and collections are safe but there is nowhere to open them.',
+			'allterrain-maia'
 		)
 	);
 }
@@ -105,7 +105,7 @@ function atme_register_shell_surfaces() {
 			apply_filters(
 				'atme_window_args',
 				array(
-					'title'        => __( 'MAIA', 'allterrain-media-explorer' ),
+					'title'        => __( 'AllTerrain MAIA', 'allterrain-maia' ),
 					'icon'         => 'dashicons-format-gallery',
 					'template'     => 'atme_render_window_template',
 					'script'       => 'allterrain-media-explorer',
@@ -137,7 +137,7 @@ function atme_register_shell_surfaces() {
 			apply_filters(
 				'atme_viewer_window_args',
 				array(
-					'title'        => __( 'MAIA Viewer', 'allterrain-media-explorer' ),
+					'title'        => __( 'AllTerrain MAIA Viewer', 'allterrain-maia' ),
 					'icon'         => 'dashicons-visibility',
 					'template'     => 'atme_render_viewer_template',
 					'script'       => 'allterrain-media-explorer',
@@ -170,7 +170,7 @@ function atme_register_shell_surfaces() {
 			apply_filters(
 				'atme_icon_args',
 				array(
-					'title'        => __( 'MAIA', 'allterrain-media-explorer' ),
+					'title'        => __( 'AllTerrain MAIA', 'allterrain-maia' ),
 					'icon'         => 'dashicons-format-gallery',
 					'window'       => 'allterrain-media-explorer',
 					'position'     => 25,
@@ -184,7 +184,7 @@ function atme_register_shell_surfaces() {
 		// The shell's file-association registry: this row appears in
 		// OpenStation Preferences → File Associations. Not default-flagged —
 		// the "(default)" suffix there marks the opener WordPress ships, and
-		// that stays with the stock media editor. MAIA becomes the effective
+		// that stays with the stock media editor. AllTerrain MAIA becomes the effective
 		// opener by seeding the user association client-side when none is
 		// stored, which the dropdown shows as the selected row. One opener,
 		// one verb: double-clicking a media file shows the photo, not a
@@ -193,7 +193,7 @@ function atme_register_shell_surfaces() {
 			'register_file_opener',
 			'atme-viewer',
 			array(
-				'label'        => __( 'MAIA Viewer', 'allterrain-media-explorer' ),
+				'label'        => __( 'AllTerrain MAIA Viewer', 'allterrain-maia' ),
 				'types'        => array( 'attachment' ),
 				'is_default'   => false,
 				'sort'         => 5,
@@ -207,15 +207,15 @@ function atme_register_shell_surfaces() {
 		$commands = array(
 			array(
 				'slug'        => 'allterrain-media-explorer',
-				'label'       => __( 'Media: open the explorer', 'allterrain-media-explorer' ),
-				'description' => __( 'Browse, organize and convert everything in the media library.', 'allterrain-media-explorer' ),
+				'label'       => __( 'Media: open the explorer', 'allterrain-maia' ),
+				'description' => __( 'Browse, organize and convert everything in the media library.', 'allterrain-maia' ),
 				'icon'        => 'dashicons-format-gallery',
 				'script'      => 'allterrain-media-explorer-shell',
 			),
 			array(
 				'slug'        => 'allterrain-media-explorer-wizard',
-				'label'       => __( 'Media: start the optimization wizard', 'allterrain-media-explorer' ),
-				'description' => __( 'Scan the library for oversized images, legacy formats, missing alt text and duplicates.', 'allterrain-media-explorer' ),
+				'label'       => __( 'Media: start the optimization wizard', 'allterrain-maia' ),
+				'description' => __( 'Scan the library for oversized images, legacy formats, missing alt text and duplicates.', 'allterrain-maia' ),
 				'icon'        => 'dashicons-superhero',
 				'script'      => 'allterrain-media-explorer-shell',
 			),
@@ -243,7 +243,7 @@ function atme_render_window_template() {
 	<div class="atme" data-atme-root data-host="window">
 		<div class="atme__loading" data-atme-loading>
 			<os-spinner preset="inline"></os-spinner>
-			<span><?php esc_html_e( 'Opening your library…', 'allterrain-media-explorer' ); ?></span>
+			<span><?php esc_html_e( 'Opening your library…', 'allterrain-maia' ); ?></span>
 		</div>
 		<div class="atme__frame" data-atme-frame hidden>
 			<aside class="atme__sidebar" data-atme-sidebar></aside>

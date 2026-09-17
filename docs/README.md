@@ -1,9 +1,9 @@
-# MAIA — developer docs
+# AllTerrain MAIA — developer docs
 
-> Branding note: the product name is **MAIA**; every machine identifier —
-> slug `allterrain-media-explorer`, text domain, `atme_` prefixes, `atme/v1`
-> REST namespace, window ids `allterrain-media-explorer` / `atme-viewer` —
-> keeps its original spelling on purpose. Code against those, not the name.
+> Branding note: the product name is **AllTerrain MAIA**. The approved directory
+> slug and text domain are `allterrain-maia`. The `atme_` prefixes, `atme/v1`
+> REST namespace and window IDs `allterrain-media-explorer` / `atme-viewer`
+> remain stable. See [branding and identifiers](architecture.md#branding-and-identifiers).
 
 The public contract with anyone building on this plugin. A hook, event or
 payload documented here with a **Stable** label will not change shape without
@@ -20,7 +20,7 @@ to a hook without a change here ships a lie.
 | [hooks-reference.md](hooks-reference.md) | Every PHP action and filter, with status labels. |
 | [javascript.md](javascript.md) | Bundles, drag payloads, broadcast topics, the config blob. |
 | [openstation.md](openstation.md) | Every shell surface the plugin registers, and how it degrades. |
-| [review-2026-09.md](review-2026-09.md) | Forms review lessons, MAIA fixes and validation. |
+| [review-2026-09.md](review-2026-09.md) | Forms review lessons, AllTerrain MAIA fixes and validation. |
 | [releasing.md](releasing.md) | WordPress.org submission, release helpers, CI and listing assets. |
 | [artwork/](artwork/README.md) | AllTerrain design sources, font licenses and exports. |
 | [examples/](examples/) | Copy-paste recipes. |

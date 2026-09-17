@@ -25,8 +25,8 @@ add_action( 'admin_menu', 'atme_register_admin_page' );
  */
 function atme_register_admin_page() {
 	add_media_page(
-		__( 'MAIA', 'allterrain-media-explorer' ),
-		__( 'MAIA', 'allterrain-media-explorer' ),
+		__( 'AllTerrain MAIA', 'allterrain-maia' ),
+		__( 'AllTerrain MAIA', 'allterrain-maia' ),
 		'upload_files',
 		'allterrain-media-explorer',
 		'atme_render_admin_page'
@@ -44,17 +44,17 @@ function atme_render_admin_page() {
 	$has_shell = atme_shell_has( 'register_window' );
 	?>
 	<div class="wrap">
-		<h1><?php esc_html_e( 'MAIA', 'allterrain-media-explorer' ); ?></h1>
+		<h1><?php esc_html_e( 'AllTerrain MAIA', 'allterrain-maia' ); ?></h1>
 		<?php if ( ! $has_shell ) : ?>
-			<p><?php esc_html_e( 'MAIA is an OpenStation desktop app, and OpenStation is not active on this site. Install and activate it, and MAIA will be waiting in the dock.', 'allterrain-media-explorer' ); ?></p>
+			<p><?php esc_html_e( 'AllTerrain MAIA is an OpenStation desktop app, and OpenStation is not active on this site. Install and activate it, and AllTerrain MAIA will be waiting in the dock.', 'allterrain-maia' ); ?></p>
 		<?php elseif ( ! atme_shell_is_active() ) : ?>
-			<p><?php esc_html_e( 'MAIA lives on the OpenStation desktop, and the desktop is currently switched off for your account. Switch it on from the toggle in the admin bar and open MAIA from the dock.', 'allterrain-media-explorer' ); ?></p>
+			<p><?php esc_html_e( 'AllTerrain MAIA lives on the OpenStation desktop, and the desktop is currently switched off for your account. Switch it on from the toggle in the admin bar and open AllTerrain MAIA from the dock.', 'allterrain-maia' ); ?></p>
 		<?php else : ?>
-			<p><?php esc_html_e( 'MAIA is open for business on your desktop — look for it in the dock.', 'allterrain-media-explorer' ); ?></p>
+			<p><?php esc_html_e( 'AllTerrain MAIA is open for business on your desktop — look for it in the dock.', 'allterrain-maia' ); ?></p>
 		<?php endif; ?>
 		<p>
 			<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'upload.php' ) ); ?>">
-				<?php esc_html_e( 'Open the classic Media Library', 'allterrain-media-explorer' ); ?>
+				<?php esc_html_e( 'Open the classic Media Library', 'allterrain-maia' ); ?>
 			</a>
 		</p>
 	</div>

@@ -1,13 +1,14 @@
-# MAIA artwork
+# AllTerrain MAIA artwork
 
-MAIA follows the AllTerrain Forms and AllTerrain Photo Editor visual family:
+AllTerrain MAIA follows the AllTerrain Forms and AllTerrain Photo Editor visual family:
 cream graph paper, a dark rounded serif wordmark, terracotta punctuation, sage
 and peach shapes, and tilted paper cards. Its own mark is an **M with a folder
 badge**; the banner uses a stack of illustrated media cards.
 
-The product name is **MAIA**, short for **Media Asset Interface & Administration**.
-The wordmark stays MAIA; the readmes and WordPress.org listing explain its full
-meaning. “By AllTerrainDeveloper” identifies the developer. The machine slug stays unchanged.
+The product name is **AllTerrain MAIA**; MAIA stands for **Media Asset Interface & Administration**.
+The banner places AllTerrain above the MAIA wordmark so the combined identity
+is clearly visible. The icon retains its M and folder symbol. The approved
+directory slug and text domain are `allterrain-maia`.
 
 ## Edit and export
 
@@ -23,7 +24,7 @@ The renderer uses bundled fonts and ignores system fonts. CI runs
 them. It allows small edge-antialiasing differences between ARM/macOS and
 x64/Linux (channel differences up to 8/255; at most 0.1% of pixels above that).
 Layout, text and palette changes still require regenerated exports. Commit both the source and all four rendered PNGs in
-`.wordpress-org/`. That folder also holds four real screenshots of MAIA on the
+`.wordpress-org/`. That folder also holds four real screenshots of AllTerrain MAIA on the
 local Docker demo site, captured on 13 September 2026. Screenshot 3 is a crop of
 the folder controls; no controls or media are fabricated or retouched.
 
@@ -35,7 +36,7 @@ packager checks exact artwork dimensions, file sizes and screenshot captions.
 
 ## Sources and licenses
 
-- Original MAIA SVG geometry and layout: Daniel Lopez / AllTerrainDeveloper, 2026,
+- Original AllTerrain MAIA SVG geometry and layout: Daniel Lopez / AllTerrainDeveloper, 2026,
   GPL-2.0-or-later, like this repository. No stock artwork is used in the banner
   or icon.
 - **Fraunces**, by the Fraunces Project Authors: SIL Open Font License 1.1.

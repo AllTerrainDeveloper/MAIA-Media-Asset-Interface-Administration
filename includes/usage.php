@@ -90,9 +90,9 @@ function atme_media_usage( $attachment_id ) {
 	if ( (int) get_option( 'site_icon' ) === $attachment_id ) {
 		$rows[] = array(
 			'postId'    => 0,
-			'title'     => __( 'Site Icon', 'allterrain-media-explorer' ),
+			'title'     => __( 'Site Icon', 'allterrain-maia' ),
 			'type'      => 'option',
-			'typeLabel' => __( 'Site setting', 'allterrain-media-explorer' ),
+			'typeLabel' => __( 'Site setting', 'allterrain-maia' ),
 			'usedAs'    => 'option',
 			'editUrl'   => esc_url_raw( admin_url( 'options-general.php' ) ),
 		);
@@ -101,9 +101,9 @@ function atme_media_usage( $attachment_id ) {
 	if ( (int) get_theme_mod( 'custom_logo' ) === $attachment_id ) {
 		$rows[] = array(
 			'postId'    => 0,
-			'title'     => __( 'Site Logo', 'allterrain-media-explorer' ),
+			'title'     => __( 'Site Logo', 'allterrain-maia' ),
 			'type'      => 'option',
-			'typeLabel' => __( 'Site setting', 'allterrain-media-explorer' ),
+			'typeLabel' => __( 'Site setting', 'allterrain-maia' ),
 			'usedAs'    => 'option',
 			'editUrl'   => esc_url_raw( admin_url( 'customize.php' ) ),
 		);

@@ -48,7 +48,7 @@ function atme_versions_dir() {
 	$dir = trailingslashit( $upload_dir['basedir'] ) . 'atme-versions/';
 
 	if ( ! wp_mkdir_p( $dir ) ) {
-		return new WP_Error( 'atme_versions_unwritable', __( 'The versions directory could not be created.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_versions_unwritable', __( 'The versions directory could not be created.', 'allterrain-maia' ) );
 	}
 
 	// Version files are working copies, not published media; no directory
@@ -103,17 +103,17 @@ function atme_replace( $attachment_id, $new_file, $args = array() ) {
 	$post = get_post( $attachment_id );
 
 	if ( ! $post || 'attachment' !== $post->post_type ) {
-		return new WP_Error( 'atme_not_an_attachment', __( 'No such media item.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_not_an_attachment', __( 'No such media item.', 'allterrain-maia' ) );
 	}
 
 	if ( ! file_exists( $new_file ) ) {
-		return new WP_Error( 'atme_file_missing', __( 'The incoming file is not there.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_file_missing', __( 'The incoming file is not there.', 'allterrain-maia' ) );
 	}
 
 	$current = atme_original_file_path( $attachment_id );
 
 	if ( ! $current ) {
-		return new WP_Error( 'atme_file_missing', __( 'The media item exists but its file is gone from disk.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_file_missing', __( 'The media item exists but its file is gone from disk.', 'allterrain-maia' ) );
 	}
 
 	$mime = $args['mime'];
@@ -124,14 +124,14 @@ function atme_replace( $attachment_id, $new_file, $args = array() ) {
 	}
 
 	if ( ! $mime ) {
-		return new WP_Error( 'atme_unknown_type', __( 'The incoming file is not a type WordPress allows.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_unknown_type', __( 'The incoming file is not a type WordPress allows.', 'allterrain-maia' ) );
 	}
 
 	$was_image = wp_attachment_is_image( $attachment_id );
 	$is_image  = 0 === strpos( $mime, 'image/' );
 
 	if ( $was_image !== $is_image ) {
-		return new WP_Error( 'atme_kind_mismatch', __( 'Replace swaps like for like — an image for an image, a document for a document.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_kind_mismatch', __( 'Replace swaps like for like — an image for an image, a document for a document.', 'allterrain-maia' ) );
 	}
 
 	$stashed = atme_stash_version( $attachment_id );
@@ -158,7 +158,7 @@ function atme_replace( $attachment_id, $new_file, $args = array() ) {
 	$moved = @rename( $new_file, $target ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.rename_rename
 
 	if ( ! $moved && ! copy( $new_file, $target ) ) {
-		return new WP_Error( 'atme_move_failed', __( 'The incoming file could not be moved into place.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_move_failed', __( 'The incoming file could not be moved into place.', 'allterrain-maia' ) );
 	}
 
 	if ( ! $moved ) {
@@ -242,13 +242,13 @@ function atme_stash_version( $attachment_id ) {
 	$current = atme_original_file_path( $attachment_id );
 
 	if ( ! $current ) {
-		return new WP_Error( 'atme_file_missing', __( 'There is no file to stash.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_file_missing', __( 'There is no file to stash.', 'allterrain-maia' ) );
 	}
 
 	$stash_name = wp_unique_filename( $dir, $attachment_id . '-' . time() . '-' . basename( $current ) );
 
 	if ( ! copy( $current, $dir . $stash_name ) ) {
-		return new WP_Error( 'atme_stash_failed', __( 'The current file could not be stashed as a version.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_stash_failed', __( 'The current file could not be stashed as a version.', 'allterrain-maia' ) );
 	}
 
 	$versions   = atme_versions_of( $attachment_id );
@@ -308,7 +308,7 @@ function atme_rollback( $attachment_id, $version_file ) {
 	// The name must come from the stored list, never from the request —
 	// a caller-supplied path here would be a directory traversal.
 	if ( ! $entry || ! file_exists( $dir . $entry['file'] ) ) {
-		return new WP_Error( 'atme_no_such_version', __( 'That version is not in this item’s history.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_no_such_version', __( 'That version is not in this item’s history.', 'allterrain-maia' ) );
 	}
 
 	// Replace consumes its incoming file, and the stash must survive the
@@ -317,7 +317,7 @@ function atme_rollback( $attachment_id, $version_file ) {
 	$staging    = trailingslashit( $upload_dir['path'] ) . wp_unique_filename( $upload_dir['path'], basename( $entry['file'] ) );
 
 	if ( ! copy( $dir . $entry['file'], $staging ) ) {
-		return new WP_Error( 'atme_stash_failed', __( 'The version could not be staged for rollback.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_stash_failed', __( 'The version could not be staged for rollback.', 'allterrain-maia' ) );
 	}
 
 	return atme_replace( $attachment_id, $staging, array( 'mime' => $entry['mime'] ) );

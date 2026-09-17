@@ -1,0 +1,7 @@
+Thank you for identifying the naming conflict.
+
+We have updated the plugin name to “AllTerrain MAIA — Media Asset Interface & Administration”, placing our AllTerrain brand first to distinguish it from “MAIA – Multipurpose AI Assistant”. MAIA retains its original expansion: Media Asset Interface & Administration.
+
+The plugin header, readme, application labels and banner use the combined branding. The package directory and text domain now use allterrain-maia.
+
+Please change our reserved slug from maia-media-asset-interface-administration to allterrain-maia. Please let us know if the combined name does not sufficiently address the naming concern.

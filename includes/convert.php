@@ -313,25 +313,25 @@ function atme_prepare_conversion( $attachment_id, $args ) {
 	$formats = atme_known_formats();
 
 	if ( ! isset( $formats[ $args['format'] ] ) ) {
-		return new WP_Error( 'atme_unknown_format', __( 'That is not a format this plugin can produce.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_unknown_format', __( 'That is not a format this plugin can produce.', 'allterrain-maia' ) );
 	}
 
 	$capabilities = atme_conversion_capabilities();
 
 	if ( empty( $capabilities['encode'][ $args['format'] ] ) ) {
-		return new WP_Error( 'atme_format_unavailable', __( 'This server cannot encode that format. The browser-side converter can.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_format_unavailable', __( 'This server cannot encode that format. The browser-side converter can.', 'allterrain-maia' ) );
 	}
 
 	$post = get_post( $attachment_id );
 
 	if ( ! $post || 'attachment' !== $post->post_type ) {
-		return new WP_Error( 'atme_not_an_attachment', __( 'No such media item.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_not_an_attachment', __( 'No such media item.', 'allterrain-maia' ) );
 	}
 
 	$source_path = atme_original_file_path( $attachment_id );
 
 	if ( ! $source_path ) {
-		return new WP_Error( 'atme_file_missing', __( 'The media item exists but its file is gone from disk.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_file_missing', __( 'The media item exists but its file is gone from disk.', 'allterrain-maia' ) );
 	}
 
 	// PDF pages and SVGs have no bitmap header for `wp_getimagesize` to
@@ -349,11 +349,11 @@ function atme_prepare_conversion( $attachment_id, $args ) {
 	$size = wp_getimagesize( $source_path );
 
 	if ( ! $size ) {
-		return new WP_Error( 'atme_not_an_image', __( 'That file is not an image this server can read.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_not_an_image', __( 'That file is not an image this server can read.', 'allterrain-maia' ) );
 	}
 
 	if ( ( $size[0] * $size[1] ) > atme_convert_pixel_ceiling() ) {
-		return new WP_Error( 'atme_too_large', __( 'That image is too large to decode on this server. Use the browser-side converter.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_too_large', __( 'That image is too large to decode on this server. Use the browser-side converter.', 'allterrain-maia' ) );
 	}
 
 	return array( $source_path, $args );
@@ -453,7 +453,7 @@ function atme_write_converted_file( $source_path, $target_path, $args ) {
 	if ( ! extension_loaded( 'imagick' ) || ! class_exists( 'Imagick' ) ) {
 		return is_wp_error( $editor )
 			? $editor
-			: new WP_Error( 'atme_encode_failed', __( 'This server could not encode the image.', 'allterrain-media-explorer' ) );
+			: new WP_Error( 'atme_encode_failed', __( 'This server could not encode the image.', 'allterrain-maia' ) );
 	}
 
 	try {

@@ -43,7 +43,7 @@ function atme_maybe_init_explorer() {
 function atme_explorer_preview_actions( $actions ) {
 	$actions[] = array(
 		'id'         => 'atme-reveal',
-		'label'      => __( 'Reveal in MAIA', 'allterrain-media-explorer' ),
+		'label'      => __( 'Reveal in AllTerrain MAIA', 'allterrain-maia' ),
 		'icon'       => 'dashicons-format-gallery',
 		'capability' => 'upload_files',
 		'sections'   => array( 'media' ),

@@ -10,7 +10,7 @@ one.
 | Library app | `App::define( 'allterrain-media-explorer' )`, `placement( 'dock' )` | The explorer itself. Dock tile comes free. |
 | Viewer app | `App::define( 'atme-viewer' )`, `placement( 'none' )` | The Media Viewer: dark stage, wheel/pinch zoom + pan, fit/1:1, ← / → walks the library by date, and the ⓘ drawer is the whole inspector. Reached through a photo (double-click anywhere, `params.mediaId` deep-link survives session restore), never launched cold — hence no dock tile. Filter: `atme_viewer_window_args`. |
 | Wallpaper icon | `openstation_register_icon()` | Desktop shortcut; accepts attachment drops (below). |
-| File opener | `openstation_register_file_opener()` + `os.files.resolve-opener` filter | **MAIA Viewer** (`atme-viewer`) — deliberately *not* default-flagged: the "(default)" suffix in Preferences → File Associations marks the opener WordPress ships, and that stays with the stock media editor. MAIA becomes the *effective* opener through the shell's `os.files.resolve-opener` filter, which only decides when the user has no stored pick — a choice made in Preferences (any opener) always wins. "Reveal in library" lives in the viewer's toolbar rather than as a second opener row. The photo editor's *edit* opener composes alongside. |
+| File opener | `openstation_register_file_opener()` + `os.files.resolve-opener` filter | **AllTerrain MAIA Viewer** (`atme-viewer`) — deliberately *not* default-flagged: the "(default)" suffix in Preferences → File Associations marks the opener WordPress ships, and that stays with the stock media editor. AllTerrain MAIA becomes the *effective* opener through the shell's `os.files.resolve-opener` filter, which only decides when the user has no stored pick — a choice made in Preferences (any opener) always wins. "Reveal in library" lives in the viewer's toolbar rather than as a second opener row. The photo editor's *edit* opener composes alongside. |
 | Commands | `openstation_register_command()` × 2 + JS `wp.os.registerCommand` | ⌘K: open the explorer; start the wizard. |
 | WP Explorer action | `openstation_my_wordpress_preview_actions` + `os.my-wordpress.preview-actions` | "Reveal in Media Explorer" on media previews. Server declares, client wires `onSelect` — appearance and behaviour on opposite sides of the wire. |
 | Icon drop handler | `wp.os.files.registerTilePayloadHandler` | Drop a media tile on our wallpaper icon → reveal it. A raw DropTarget on the tile would be displaced by the tile's claimant; the handler registry is the cooperative path. |
@@ -69,6 +69,6 @@ keeps the media canvas under an `os-preserve` host. Read
 Older shells retain native rendering. Current shells never register a competing
 legacy renderer for these two window ids.
 
-To test locally, run `npm run build`, then open **MAIA** on
+To test locally, run `npm run build`, then open **AllTerrain MAIA** on
 http://localhost:8889/wp-admin/. Reopen a second photo while the viewer remains
 open, use Show in library, open the wizard, and reload the page to check restore.

@@ -41,9 +41,15 @@ describe( 'WordPress.org package', () => {
 		const result = spawnSync( 'node', [ 'bin/package.mjs' ], { cwd: dir, encoding: 'utf8' } );
 		expect( result.stderr ).toBe( '' );
 		expect( result.status ).toBe( 0 );
-		const contents = spawnSync( 'unzip', [ '-Z1', 'dist/allterrain-media-explorer.zip' ], { cwd: dir, encoding: 'utf8' } ).stdout;
-		expect( contents ).toContain( 'allterrain-media-explorer/allterrain-media-explorer.php' );
-		expect( contents ).toContain( 'allterrain-media-explorer/assets/js/codec.min.js' );
+		const contents = spawnSync( 'unzip', [ '-Z1', 'dist/allterrain-maia.zip' ], { cwd: dir, encoding: 'utf8' } ).stdout;
+		expect( contents ).toContain( 'allterrain-maia/allterrain-media-explorer.php' );
+		expect( contents ).toContain( 'allterrain-maia/assets/js/codec.min.js' );
+		const header = readFileSync( join( dir, 'dist/allterrain-maia/allterrain-media-explorer.php' ), 'utf8' );
+		expect( header ).toContain( 'Plugin Name:       AllTerrain MAIA — Media Asset Interface & Administration' );
+		expect( header ).toContain( 'Text Domain:       allterrain-maia' );
+		expect( readFileSync( join( dir, 'dist/allterrain-maia/readme.txt' ), 'utf8' ) )
+			.toMatch( /^=== AllTerrain MAIA — Media Asset Interface & Administration ===/ );
+
 		expect( contents ).not.toMatch( /AGENTS|docs\/|\.wordpress-org|package\.json|bin\/|\.DS_Store/ );
 		expect( readdirSync( join( dir, 'dist/assets' ) ) ).toHaveLength( 8 );
 	} );

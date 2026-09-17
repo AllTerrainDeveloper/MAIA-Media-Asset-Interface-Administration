@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { ships } from './ships.mjs';
 
 const root = resolve( dirname( fileURLToPath( import.meta.url ) ), '..' );
-const slug = 'allterrain-media-explorer';
+const slug = 'allterrain-maia';
 
 /**
  * Findings this plugin has looked at and decided are wrong about it.

@@ -1,9 +1,9 @@
-# Releasing MAIA
+# Releasing AllTerrain MAIA
 
-The installable plugin keeps the slug `allterrain-media-explorer`. Its public
-name is **MAIA**, short for **Media Asset Interface & Administration**.
-The directory title uses the full expansion: **MAIA — Media Asset Interface & Administration**.
-The app and artwork keep the short MAIA name. The version header, `ATME_VERSION`, `readme.txt` Stable tag,
+The approved WordPress.org slug and text domain are `allterrain-maia`. Its public
+name is **AllTerrain MAIA**; MAIA stands for **Media Asset Interface & Administration**.
+The directory title uses the full expansion: **AllTerrain MAIA — Media Asset Interface & Administration**.
+The app and artwork keep the short AllTerrain MAIA name. The version header, `ATME_VERSION`, `readme.txt` Stable tag,
 `package.json` and both root version entries in `package-lock.json` must agree.
 The packager refuses a mismatch.
 
@@ -23,8 +23,8 @@ npm run plugin:release
 `plugin:release` runs typechecking, Vitest, all bundle builds, PHP integration
 tests, Plugin Check, version/artwork validation and packaging. It creates:
 
-- `dist/allterrain-media-explorer.zip` — one plugin directory, ready to upload.
-- `dist/allterrain-media-explorer/` — the same staged plugin tree for SVN.
+- `dist/allterrain-maia.zip` — one plugin directory, ready to upload.
+- `dist/allterrain-maia/` — the same staged plugin tree for SVN.
 - `dist/assets/` — banners, icons and screenshot PNGs for SVN's separate assets directory.
 
 `npm run plugin:package` runs the JS checks/build and packaging only. It is useful
@@ -53,7 +53,7 @@ PHP environment**. Tests fail if no usable backend or framework is available.
    guarantee of approval. The current fixes and limits are recorded in
    [the review audit](review-2026-09.md).
 4. After approval, confirm the assigned SVN repository slug. The workflow currently
-   targets `allterrain-media-explorer`. If WordPress.org assigns another slug,
+   targets `allterrain-maia`. If WordPress.org assigns another slug,
    reconcile the package/install path and workflow before the first deploy;
    do not blindly rename stored data or API identifiers.
 5. Add repository Actions secrets `SVN_USERNAME` and `SVN_PASSWORD`. Use the
@@ -61,10 +61,33 @@ PHP environment**. Tests fail if no usable backend or framework is available.
    required before the deploy step runs. The listing contributor is
    `allterraindeveloper`, matching the other AllTerrain plugins.
 
-No SVN credentials are stored in this repository. Initial submission, directory
-approval and configuring credentials are separate from preparing this PR.
+WordPress.org approved `allterrain-maia` on 17 September 2026. The SVN repository
+is https://plugins.svn.wordpress.org/allterrain-maia/. Configure both credentials
+under GitHub Settings → Secrets and variables → Actions → Repository secrets;
+no Actions variables or manually supplied GitHub token are required. Without
+both secrets the workflow skips WordPress.org deployment.
 
-## Subsequent releases
+No SVN credentials are stored in this repository.
+
+## Naming review resubmission
+
+The 15 September 2026 revision adds AllTerrain to the listing, app labels and
+banner, and changes the package directory and text domain to `allterrain-maia`.
+The submitted reservation was `maia-media-asset-interface-administration`;
+the review team approved the replacement slug on 17 September 2026.
+The [prepared review reply](wordpress-org-reply.txt) is retained as historical
+context. No directory upload or email is performed by the build scripts.
+
+The bootstrap filename remains `allterrain-media-explorer.php`. The local Docker
+QA install stays under its existing `allterrain-media-explorer/` folder to keep
+its activation intact; wp-env mounts the new `allterrain-maia/` package path.
+Stored data and public integration IDs do not change; see [architecture](architecture.md#branding-and-identifiers).
+
+## Publishing releases
+
+The first WordPress.org release uses `0.1.1`: GitHub already has a `v0.1.0`
+release from before directory approval. Do not redeploy that old tag, which
+predates the approved naming and package changes.
 
 Start on `main`, synchronized with `origin/main`. Commit feature work, built
 assets and hand-written release notes first.

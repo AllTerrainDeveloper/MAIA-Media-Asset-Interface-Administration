@@ -1,4 +1,4 @@
-=== MAIA — Media Asset Interface & Administration ===
+=== AllTerrain MAIA — Media Asset Interface & Administration ===
 Contributors: allterraindeveloper
 Tags: media library, folders, image optimization, webp, avif
 Requires at least: 6.0
@@ -61,9 +61,9 @@ product lives.
 == Installation ==
 
 1. Install and activate [OpenStation](https://wordpress.org/plugins/desktop-mode/).
-2. Upload the MAIA ZIP through Plugins > Add New > Upload Plugin, then activate it.
+2. Upload the AllTerrain MAIA ZIP through Plugins > Add New > Upload Plugin, then activate it.
 3. Enable OpenStation for your user from the WordPress admin bar.
-4. Open MAIA from the desktop dock or its desktop shortcut. Your existing media is already there.
+4. Open AllTerrain MAIA from the desktop dock or its desktop shortcut. Your existing media is already there.
 
 Requires WordPress 6.0 or later and PHP 7.4 or later. Available conversion formats
 depend on the image libraries installed on your host and your browser's capabilities.
@@ -72,7 +72,7 @@ depend on the image libraries installed on your host and your browser's capabili
 
 = Do I need OpenStation? =
 
-Yes. MAIA's interface is a native OpenStation app. Install OpenStation first;
+Yes. AllTerrain MAIA's interface is a native OpenStation app. Install OpenStation first;
 its WordPress.org dependency slug is desktop-mode.
 
 = Are folders physical directories? =
@@ -89,14 +89,14 @@ in the library and its child folders move up one level.
 = Does replacement keep existing links working? =
 
 Same-format replacements keep the attachment ID and URL. Changing format changes
-the file extension and URL. MAIA does not rewrite existing embedded URLs; review
+the file extension and URL. AllTerrain MAIA does not rewrite existing embedded URLs; review
 those links after converting in place. Previous originals are kept as versions.
 
 = Can I convert HEIC and AVIF on any host? =
 
 HEIC intake requires an Imagick installation that can read HEIC. Server-side
 conversion uses the formats available through Imagick or GD. For supported
-fallbacks, MAIA uses browser canvas encoding or its bundled AVIF WebAssembly codec.
+fallbacks, AllTerrain MAIA uses browser canvas encoding or its bundled AVIF WebAssembly codec.
 
 = Will the wizard delete duplicates or generate alt text automatically? =
 
@@ -104,9 +104,9 @@ No. The wizard reports duplicates for you to review and only applies the fixes
 you select. Alt text needs a human review. Optional AI suggestions require a
 separate, explicit confirmation for each image; see External services below.
 
-= What happens if I deactivate or uninstall MAIA? =
+= What happens if I deactivate or uninstall AllTerrain MAIA? =
 
-Deactivation leaves your data in place. Uninstall removes MAIA's folder terms,
+Deactivation leaves your data in place. Uninstall removes AllTerrain MAIA's folder terms,
 saved collections, settings and saved version files. Current media attachments
 and their active files remain. Export any versions you want to keep first.
 
@@ -119,7 +119,7 @@ and their active files remain. Export any versions you want to keep first.
 
 == External services ==
 
-MAIA has no telemetry, license server or service operated by its author.
+AllTerrain MAIA has no telemetry, license server or service operated by its author.
 Media browsing, conversion, EXIF reading and the wizard run on your site or
 in your browser. The AVIF codec is bundled and loaded from your own site.
 
@@ -129,7 +129,7 @@ OpenStation to the AI provider configured by your site administrator. That
 provider may retrieve the image from its URL. No AI request is made by
 opening a window or scanning the library. Review the selected provider's
 terms and privacy policy in your site's AI provider configuration before
-sending media. MAIA does not choose or configure a provider.
+sending media. AllTerrain MAIA does not choose or configure a provider.
 
 == Source ==
 
@@ -142,8 +142,13 @@ WebAssembly and bundled unmodified.
 
 == Changelog ==
 
+= 0.1.1 =
+* First WordPress.org release under the approved AllTerrain MAIA name and allterrain-maia slug.
+* Update app labels, directory artwork and translations to the approved branding.
+* Preserve existing media, folders, collections and OpenStation integration identifiers.
+
 = 0.1.0 =
-* First release of MAIA for the OpenStation desktop.
+* First release of AllTerrain MAIA for the OpenStation desktop.
 * Organize media with nested folders, saved collections and smart views.
 * View, convert and replace images with restorable original versions.
 * Review media usage and run a resumable optimization wizard.

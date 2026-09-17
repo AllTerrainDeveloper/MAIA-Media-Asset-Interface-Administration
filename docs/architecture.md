@@ -1,5 +1,18 @@
 # Architecture
 
+## Branding and identifiers
+
+The public name is **AllTerrain MAIA — Media Asset Interface & Administration**.
+The release ZIP and its top-level directory use `allterrain-maia`; translation
+calls and the plugin header use the matching `allterrain-maia` text domain.
+WordPress.org approved that slug on 17 September 2026.
+
+The bootstrap filename remains `allterrain-media-explorer.php`. Existing app IDs,
+script/style handles, drag types, `atme_` hooks, `atme/v1` REST routes, taxonomy
+names, user options and attachment metadata retain their original identifiers.
+This naming revision requires no stored-data migration. Third-party translation
+catalogues must target the new text domain.
+
 ## Everything is a post (or a term, or a meta row)
 
 | Thing | Storage |

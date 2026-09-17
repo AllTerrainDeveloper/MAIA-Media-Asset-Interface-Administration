@@ -1,6 +1,6 @@
 <?php
 /**
- * MAIA Viewer App Framework window.
+ * AllTerrain MAIA Viewer App Framework window.
  *
  * @package AllTerrain_Media_Explorer
  */
@@ -10,7 +10,7 @@ use OpenStation\App;
 defined( 'ABSPATH' ) || exit;
 
 return App::define( 'atme-viewer' )
-	->title( __( 'MAIA Viewer', 'allterrain-media-explorer' ) )
+	->title( __( 'AllTerrain MAIA Viewer', 'allterrain-maia' ) )
 	->icon( 'dashicons-visibility' )
 	->size( 1060, 720 )
 	->min_size( 560, 420 )

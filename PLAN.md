@@ -1,7 +1,7 @@
-# MAIA — Media Asset Interface & Administration — the plan
+# AllTerrain MAIA — Media Asset Interface & Administration — the plan
 
-> (Shipped as `allterrain-media-explorer`; renamed to MAIA mid-build, machine
-> identifiers deliberately kept.) The media library WordPress should have
+> (Originally shipped as `allterrain-media-explorer`; now AllTerrain MAIA with
+> approved package slug/text domain `allterrain-maia` and stable integration IDs.) The media library WordPress should have
 > shipped, built as a **native
 > [OpenStation](https://github.com/WordPress/openstation) app**. Everything the
 > core Media Library does, plus everything it cannot: folders, format
@@ -100,7 +100,8 @@ Revisit only if a "light table" free-arrange view earns a phase.
 
 ## 3. Identity and conventions (the sibling contract)
 
-- Slug / text domain / window id: `allterrain-media-explorer`
+- Package slug / text domain: `allterrain-maia` (approved by WordPress.org)
+- Window ID: `allterrain-media-explorer`
 - Prefixes: `atme_` functions, `ATME_` constants, `.atme-` CSS, `@group allterrain-media-explorer` tests
 - REST namespace: `atme/v1`
 - Drag payloads **emitted**: the shell's own `'shortcut'` + `kind:'attachment'` + `bridgePayload` (interop first); accepted: `'shortcut'`, `'desktop-file'`, OS file drops

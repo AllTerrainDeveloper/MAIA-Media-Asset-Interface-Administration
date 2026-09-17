@@ -109,7 +109,7 @@ function atme_regenerate_thumbnails( $attachment_id ) {
 	$path = atme_original_file_path( $attachment_id );
 
 	if ( ! $path ) {
-		return new WP_Error( 'atme_file_missing', __( 'The media item exists but its file is gone from disk.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_file_missing', __( 'The media item exists but its file is gone from disk.', 'allterrain-maia' ) );
 	}
 
 	require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -117,7 +117,7 @@ function atme_regenerate_thumbnails( $attachment_id ) {
 	$metadata = wp_generate_attachment_metadata( $attachment_id, $path );
 
 	if ( empty( $metadata ) ) {
-		return new WP_Error( 'atme_regenerate_failed', __( 'WordPress could not rebuild the image sizes.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_regenerate_failed', __( 'WordPress could not rebuild the image sizes.', 'allterrain-maia' ) );
 	}
 
 	wp_update_attachment_metadata( $attachment_id, $metadata );

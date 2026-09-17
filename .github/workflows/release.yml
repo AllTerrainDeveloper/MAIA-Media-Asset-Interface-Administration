@@ -14,12 +14,9 @@ name: Release
 # tag's commit, so a deploy that fails for a workflow-level reason can never be
 # fixed by re-running it. Dispatching from main runs the current definition.
 #
-# NOTE: the WordPress.org step cannot succeed until MAIA is approved and its
-# SVN repository exists at
-# https://plugins.svn.wordpress.org/allterrain-media-explorer. Until then the
-# first submission is a manual zip upload -- `npm run plugin:package` builds
-# exactly the file to upload. Everything before that step is useful from the
-# first tag.
+# WordPress.org approved allterrain-maia on 17 September 2026. Stable tags
+# deploy to https://plugins.svn.wordpress.org/allterrain-maia when both
+# SVN_USERNAME and SVN_PASSWORD repository Actions secrets are configured.
 
 on:
   push:
@@ -135,7 +132,7 @@ jobs:
             --title "$TAG" \
             --generate-notes \
             "${flags[@]}" \
-            dist/allterrain-media-explorer.zip
+            dist/allterrain-maia.zip
 
       # Prereleases (v1.0.0-rc1) stop at the GitHub Release: WordPress.org has
       # no concept of one, and pushing it would make it the live download.
@@ -150,13 +147,13 @@ jobs:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           # Set explicitly rather than left to default off the GitHub repo name.
           # The slug is the published SVN path and the install directory -- the
-          # repo is named after MAIA, the product, but the slug must stay the
-          # machine identifier the plugin installed under.
-          SLUG: allterrain-media-explorer
+          # approved allterrain-maia reservation is independent of the GitHub
+          # repository name. Integration IDs keep their existing spelling.
+          SLUG: allterrain-maia
           # `bin/package.mjs` stages both halves of an SVN commit: the plugin
           # tree the zip was built from, and any banner/icon art in
           # `.wordpress-org/`, which belongs in the directory's own assets/ path
           # rather than in the download.
-          BUILD_DIR: ./dist/allterrain-media-explorer
+          BUILD_DIR: ./dist/allterrain-maia
           ASSETS_DIR: ./dist/assets
           VERSION: ${{ env.VERSION }}

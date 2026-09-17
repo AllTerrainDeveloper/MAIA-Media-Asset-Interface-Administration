@@ -107,11 +107,11 @@ function atme_create_folder( $name, $parent = 0 ) {
 	$name = trim( sanitize_text_field( $name ) );
 
 	if ( '' === $name ) {
-		return new WP_Error( 'atme_empty_name', __( 'A folder needs a name.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_empty_name', __( 'A folder needs a name.', 'allterrain-maia' ) );
 	}
 
 	if ( $parent && ! term_exists( (int) $parent, ATME_FOLDER_TAX ) ) {
-		return new WP_Error( 'atme_no_such_folder', __( 'The parent folder is gone.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_no_such_folder', __( 'The parent folder is gone.', 'allterrain-maia' ) );
 	}
 
 	$created = wp_insert_term( $name, ATME_FOLDER_TAX, array( 'parent' => (int) $parent ) );
@@ -138,7 +138,7 @@ function atme_create_folder( $name, $parent = 0 ) {
  */
 function atme_file_into_folder( $attachment_ids, $folder_id ) {
 	if ( ! term_exists( (int) $folder_id, ATME_FOLDER_TAX ) ) {
-		return new WP_Error( 'atme_no_such_folder', __( 'That folder is gone.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_no_such_folder', __( 'That folder is gone.', 'allterrain-maia' ) );
 	}
 
 	foreach ( array_map( 'intval', (array) $attachment_ids ) as $attachment_id ) {
@@ -194,7 +194,7 @@ add_filter( 'rest_attachment_collection_params', 'atme_rest_attachment_collectio
  */
 function atme_rest_attachment_collection_params( $params ) {
 	$params['atme_view'] = array(
-		'description' => __( 'A Media Explorer smart view to filter by.', 'allterrain-media-explorer' ),
+		'description' => __( 'A Media Explorer smart view to filter by.', 'allterrain-maia' ),
 		'type'        => 'string',
 		'enum'        => array( '', 'missing-alt', 'converted', 'unfiled' ),
 		'default'     => '',

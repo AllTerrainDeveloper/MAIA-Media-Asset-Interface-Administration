@@ -4,6 +4,11 @@ Every PHP action and filter this plugin exposes. Labels: **Stable** —
 shape frozen until a major version; **Experimental** — may change in a
 minor.
 
+The default explorer and icon titles are **AllTerrain MAIA**, and the viewer
+title is **AllTerrain MAIA Viewer**. The existing `atme_window_args`,
+`atme_viewer_window_args` and `atme_icon_args` filters can override those titles.
+Their signatures and window identifiers are unchanged.
+
 ## Conversion
 
 ### `atme_conversion_formats` — filter — Stable

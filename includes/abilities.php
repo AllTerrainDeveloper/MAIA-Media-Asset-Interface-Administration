@@ -34,8 +34,8 @@ function atme_register_ability_category() {
 		wp_register_ability_category(
 			'allterrain-media-explorer',
 			array(
-				'label'       => __( 'MAIA', 'allterrain-media-explorer' ),
-				'description' => __( 'Search, organize, convert and repair the media library.', 'allterrain-media-explorer' ),
+				'label'       => __( 'AllTerrain MAIA', 'allterrain-maia' ),
+				'description' => __( 'Search, organize, convert and repair the media library.', 'allterrain-maia' ),
 			)
 		);
 	}
@@ -74,8 +74,8 @@ function atme_register_abilities() {
 		wp_register_ability(
 			'allterrain-media-explorer/search-media',
 			array(
-				'label'               => __( 'Search media', 'allterrain-media-explorer' ),
-				'description'         => __( 'Finds media items by text, type or folder.', 'allterrain-media-explorer' ),
+				'label'               => __( 'Search media', 'allterrain-maia' ),
+				'description'         => __( 'Finds media items by text, type or folder.', 'allterrain-maia' ),
 				'category'            => 'allterrain-media-explorer',
 				'permission_callback' => 'atme_can_upload',
 				'input_schema'        => array(
@@ -105,8 +105,8 @@ function atme_register_abilities() {
 		wp_register_ability(
 			'allterrain-media-explorer/get-media-usage',
 			array(
-				'label'               => __( 'Get media usage', 'allterrain-media-explorer' ),
-				'description'         => __( 'Lists every post and setting using a media item.', 'allterrain-media-explorer' ),
+				'label'               => __( 'Get media usage', 'allterrain-maia' ),
+				'description'         => __( 'Lists every post and setting using a media item.', 'allterrain-maia' ),
 				'category'            => 'allterrain-media-explorer',
 				'permission_callback' => 'atme_can_edit_media',
 				'input_schema'        => array(
@@ -127,8 +127,8 @@ function atme_register_abilities() {
 		wp_register_ability(
 			'allterrain-media-explorer/set-alt-text',
 			array(
-				'label'               => __( 'Set alt text', 'allterrain-media-explorer' ),
-				'description'         => __( 'Writes an image’s alternative text.', 'allterrain-media-explorer' ),
+				'label'               => __( 'Set alt text', 'allterrain-maia' ),
+				'description'         => __( 'Writes an image’s alternative text.', 'allterrain-maia' ),
 				'category'            => 'allterrain-media-explorer',
 				'permission_callback' => 'atme_can_edit_media',
 				'input_schema'        => array(
@@ -150,8 +150,8 @@ function atme_register_abilities() {
 		wp_register_ability(
 			'allterrain-media-explorer/convert-media',
 			array(
-				'label'               => __( 'Convert media', 'allterrain-media-explorer' ),
-				'description'         => __( 'Converts an image to another format, as a copy or in place.', 'allterrain-media-explorer' ),
+				'label'               => __( 'Convert media', 'allterrain-maia' ),
+				'description'         => __( 'Converts an image to another format, as a copy or in place.', 'allterrain-maia' ),
 				'category'            => 'allterrain-media-explorer',
 				'permission_callback' => 'atme_can_edit_media',
 				'input_schema'        => array(
@@ -184,8 +184,8 @@ function atme_register_abilities() {
 		wp_register_ability(
 			'allterrain-media-explorer/list-folders',
 			array(
-				'label'               => __( 'List media folders', 'allterrain-media-explorer' ),
-				'description'         => __( 'The folder tree, with counts.', 'allterrain-media-explorer' ),
+				'label'               => __( 'List media folders', 'allterrain-maia' ),
+				'description'         => __( 'The folder tree, with counts.', 'allterrain-maia' ),
 				'category'            => 'allterrain-media-explorer',
 				'permission_callback' => 'atme_can_upload',
 				'input_schema'        => array( 'type' => 'object' ),
@@ -200,8 +200,8 @@ function atme_register_abilities() {
 		wp_register_ability(
 			'allterrain-media-explorer/file-media',
 			array(
-				'label'               => __( 'File media into a folder', 'allterrain-media-explorer' ),
-				'description'         => __( 'Adds media items to a folder, additively.', 'allterrain-media-explorer' ),
+				'label'               => __( 'File media into a folder', 'allterrain-maia' ),
+				'description'         => __( 'Adds media items to a folder, additively.', 'allterrain-maia' ),
 				'category'            => 'allterrain-media-explorer',
 				'permission_callback' => 'atme_can_edit_media_batch',
 				'input_schema'        => array(
@@ -226,8 +226,8 @@ function atme_register_abilities() {
 		wp_register_ability(
 			'allterrain-media-explorer/scan-library',
 			array(
-				'label'               => __( 'Scan the media library', 'allterrain-media-explorer' ),
-				'description'         => __( 'One chunk of the optimization scan: oversized images, legacy formats, missing alt text, duplicates.', 'allterrain-media-explorer' ),
+				'label'               => __( 'Scan the media library', 'allterrain-maia' ),
+				'description'         => __( 'One chunk of the optimization scan: oversized images, legacy formats, missing alt text, duplicates.', 'allterrain-maia' ),
 				'category'            => 'allterrain-media-explorer',
 				'permission_callback' => 'atme_can_upload',
 				'input_schema'        => array(
@@ -335,7 +335,7 @@ function atme_ability_set_alt( $input ) {
 	$id = (int) $input['id'];
 
 	if ( 'attachment' !== get_post_type( $id ) ) {
-		return new WP_Error( 'atme_not_an_attachment', __( 'No such media item.', 'allterrain-media-explorer' ) );
+		return new WP_Error( 'atme_not_an_attachment', __( 'No such media item.', 'allterrain-maia' ) );
 	}
 
 	update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( (string) $input['alt'] ) );

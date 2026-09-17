@@ -40,12 +40,12 @@ function registerFileOpener(): void {
 	// on the way, so the subject would be lost.
 	shell?.files?.registerOpener?.( {
 		id: 'atme-viewer',
-		label: 'MAIA Viewer',
+		label: 'AllTerrain MAIA Viewer',
 		types: [ 'attachment' ],
 		sort: 5,
 		// Deliberately NOT default-flagged: the "(default)" suffix in the
 		// Preferences dropdown marks the opener WordPress ships, and that
-		// honour stays with the stock media editor. MAIA becomes the
+		// honour stays with the stock media editor. AllTerrain MAIA becomes the
 		// *effective* opener through the association below — the same
 		// mechanism a user's own pick uses, shown as the selected row.
 		isDefault: false,
@@ -55,13 +55,13 @@ function registerFileOpener(): void {
 		},
 	} );
 
-	// Out of the box, double-clicking a media file opens MAIA — through the
+	// Out of the box, double-clicking a media file opens AllTerrain MAIA — through the
 	// shell's own resolution filter, which runs after the user-override and
 	// default-flag steps. Deferential by construction: a stored pick in
 	// Preferences (any opener, including the stock editor) short-circuits
 	// before this filter matters, so it only ever decides the "no
 	// preference yet" case. The Preferences dropdown mirrors the same
-	// resolution, so MAIA shows as the selected row while "(default)"
+	// resolution, so AllTerrain MAIA shows as the selected row while "(default)"
 	// stays on the opener WordPress ships.
 	const hooks = ( window as unknown as {
 		wp?: { hooks?: { addFilter: ( h: string, ns: string, cb: ( ...a: unknown[] ) => unknown ) => void } };
@@ -101,7 +101,7 @@ function registerIconDropHandler(): void {
 	files.registerTilePayloadHandler( 'shortcut', {
 		appliesTo: isOurIcon,
 		accept: ( data ) => data?.kind === 'attachment',
-		acceptLabel: 'Reveal in MAIA',
+		acceptLabel: 'Reveal in AllTerrain MAIA',
 		onDrop: ( session ) => openAndReveal( Number( session.payload.data?.ref ?? 0 ) ),
 	} );
 
@@ -112,7 +112,7 @@ function registerIconDropHandler(): void {
 
 			return placement?.file?.type === 'attachment';
 		},
-		acceptLabel: 'Reveal in MAIA',
+		acceptLabel: 'Reveal in AllTerrain MAIA',
 		onDrop: ( session ) => {
 			const placement = session.payload.data?.placement as { file?: { ref?: string } } | undefined;
 
@@ -130,19 +130,19 @@ function registerCommands(): void {
 
 	shell.registerCommand( {
 		slug: 'allterrain-media-explorer',
-		label: 'MAIA: open the media library',
+		label: 'AllTerrain MAIA: open the media library',
 		description: 'Browse, organize and convert everything in the media library.',
 		icon: 'dashicons-format-gallery',
 		run: () => {
 			openAndReveal( 0 );
 
-			return 'Opening MAIA…';
+			return 'Opening AllTerrain MAIA…';
 		},
 	} );
 
 	shell.registerCommand( {
 		slug: 'allterrain-media-explorer-wizard',
-		label: 'MAIA: start the optimization wizard',
+		label: 'AllTerrain MAIA: start the optimization wizard',
 		description: 'Scan the library for oversized images, legacy formats, missing alt text and duplicates.',
 		icon: 'dashicons-superhero',
 		run: () => {

@@ -35,12 +35,12 @@
     const shell2 = getShell();
     shell2?.files?.registerOpener?.({
       id: "atme-viewer",
-      label: "MAIA Viewer",
+      label: "AllTerrain MAIA Viewer",
       types: ["attachment"],
       sort: 5,
       // Deliberately NOT default-flagged: the "(default)" suffix in the
       // Preferences dropdown marks the opener WordPress ships, and that
-      // honour stays with the stock media editor. MAIA becomes the
+      // honour stays with the stock media editor. AllTerrain MAIA becomes the
       // *effective* opener through the association below — the same
       // mechanism a user's own pick uses, shown as the selected row.
       isDefault: false,
@@ -70,7 +70,7 @@
     files.registerTilePayloadHandler("shortcut", {
       appliesTo: isOurIcon,
       accept: (data) => data?.kind === "attachment",
-      acceptLabel: "Reveal in MAIA",
+      acceptLabel: "Reveal in AllTerrain MAIA",
       onDrop: (session) => openAndReveal(Number(session.payload.data?.ref ?? 0))
     });
     files.registerTilePayloadHandler("desktop-file", {
@@ -79,7 +79,7 @@
         const placement = data?.placement;
         return placement?.file?.type === "attachment";
       },
-      acceptLabel: "Reveal in MAIA",
+      acceptLabel: "Reveal in AllTerrain MAIA",
       onDrop: (session) => {
         const placement = session.payload.data?.placement;
         openAndReveal(Number(placement?.file?.ref ?? 0));
@@ -93,17 +93,17 @@
     }
     shell2.registerCommand({
       slug: "allterrain-media-explorer",
-      label: "MAIA: open the media library",
+      label: "AllTerrain MAIA: open the media library",
       description: "Browse, organize and convert everything in the media library.",
       icon: "dashicons-format-gallery",
       run: () => {
         openAndReveal(0);
-        return "Opening MAIA…";
+        return "Opening AllTerrain MAIA…";
       }
     });
     shell2.registerCommand({
       slug: "allterrain-media-explorer-wizard",
-      label: "MAIA: start the optimization wizard",
+      label: "AllTerrain MAIA: start the optimization wizard",
       description: "Scan the library for oversized images, legacy formats, missing alt text and duplicates.",
       icon: "dashicons-superhero",
       run: () => {

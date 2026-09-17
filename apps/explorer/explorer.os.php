@@ -1,6 +1,6 @@
 <?php
 /**
- * MAIA App Framework window.
+ * AllTerrain MAIA App Framework window.
  *
  * @package AllTerrain_Media_Explorer
  */
@@ -10,7 +10,7 @@ use OpenStation\App;
 defined( 'ABSPATH' ) || exit;
 
 return App::define( 'allterrain-media-explorer' )
-	->title( __( 'MAIA', 'allterrain-media-explorer' ) )
+	->title( __( 'AllTerrain MAIA', 'allterrain-maia' ) )
 	->icon( 'dashicons-format-gallery' )
 	->size( 1280, 800 )
 	->min_size( 720, 480 )

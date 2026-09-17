@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-<title>MAIA icon — an M with a media folder badge</title>
+<title>AllTerrain MAIA icon — an M with a media folder badge</title>
 <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#dfd6c4" stroke-width=".7"/></pattern></defs>
 <rect width="256" height="256" fill="#f4eddd"/>
 <rect width="256" height="256" fill="url(#grid)"/>

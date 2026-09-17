@@ -29,7 +29,7 @@ function atme_register_rest_routes() {
 		'type'              => 'integer',
 		'required'          => true,
 		'minimum'           => 1,
-		'description'       => __( 'Attachment ID.', 'allterrain-media-explorer' ),
+		'description'       => __( 'Attachment ID.', 'allterrain-maia' ),
 		'sanitize_callback' => 'absint',
 	);
 
@@ -46,7 +46,7 @@ function atme_register_rest_routes() {
 					'type'        => 'string',
 					'required'    => true,
 					'enum'        => array_keys( atme_known_formats() ),
-					'description' => __( 'Target format.', 'allterrain-media-explorer' ),
+					'description' => __( 'Target format.', 'allterrain-maia' ),
 				),
 				'quality'    => array(
 					'type'    => 'integer',
@@ -67,12 +67,12 @@ function atme_register_rest_routes() {
 					'type'        => 'integer',
 					'default'     => 0,
 					'enum'        => array( 0, 90, 180, 270 ),
-					'description' => __( 'Rotate clockwise by this many degrees while converting.', 'allterrain-media-explorer' ),
+					'description' => __( 'Rotate clockwise by this many degrees while converting.', 'allterrain-maia' ),
 				),
 				'replace'    => array(
 					'type'        => 'boolean',
 					'default'     => false,
-					'description' => __( 'Convert in place instead of as a copy.', 'allterrain-media-explorer' ),
+					'description' => __( 'Convert in place instead of as a copy.', 'allterrain-maia' ),
 				),
 			),
 		)
@@ -108,7 +108,7 @@ function atme_register_rest_routes() {
 					'file' => array(
 						'type'        => 'string',
 						'required'    => true,
-						'description' => __( 'The version’s stored name, from the history list.', 'allterrain-media-explorer' ),
+						'description' => __( 'The version’s stored name, from the history list.', 'allterrain-maia' ),
 					),
 				),
 			),
@@ -186,7 +186,7 @@ function atme_register_rest_routes() {
 				'type'    => 'integer',
 				'minimum' => 1,
 			),
-			'description' => __( 'Attachment IDs.', 'allterrain-media-explorer' ),
+			'description' => __( 'Attachment IDs.', 'allterrain-maia' ),
 		),
 		'folder' => array(
 			'type'              => 'integer',
@@ -270,7 +270,7 @@ function atme_register_rest_routes() {
 					'state' => array(
 						'type'        => array( 'object', 'null' ),
 						'required'    => true,
-						'description' => __( 'The wizard’s resumable state, or null to clear it.', 'allterrain-media-explorer' ),
+						'description' => __( 'The wizard’s resumable state, or null to clear it.', 'allterrain-maia' ),
 					),
 				),
 			),
@@ -344,13 +344,13 @@ function atme_rest_replace( $request ) {
 	if ( empty( $files['file'] ) ) {
 		return new WP_Error(
 			'atme_no_file',
-			__( 'Send the replacement as a multipart field named “file”.', 'allterrain-media-explorer' ),
+			__( 'Send the replacement as a multipart field named “file”.', 'allterrain-maia' ),
 			array( 'status' => 400 )
 		);
 	}
 
 	if ( (int) $files['file']['size'] > wp_max_upload_size() ) {
-		return new WP_Error( 'atme_upload_too_large', __( 'The replacement exceeds this site’s upload limit.', 'allterrain-media-explorer' ), array( 'status' => 400 ) );
+		return new WP_Error( 'atme_upload_too_large', __( 'The replacement exceeds this site’s upload limit.', 'allterrain-maia' ), array( 'status' => 400 ) );
 	}
 
 	require_once ABSPATH . 'wp-admin/includes/file.php';

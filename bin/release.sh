@@ -79,7 +79,7 @@ fi
 # Resolve origin once through the API instead (which also follows repository
 # renames, so a stale remote URL still lands on the right slug) and pass
 # --repo explicitly to every gh call below. This repository is called
-# `MAIA-Media-Asset-Interface-Administration` while the plugin uses its original slug, so nothing here
+# `MAIA-Media-Asset-Interface-Administration` while the plugin uses the allterrain-maia slug, so nothing here
 # may infer one name from the other.
 repo=$(gh repo view "$(git remote get-url origin)" --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)
 if [[ -z "$repo" ]]; then

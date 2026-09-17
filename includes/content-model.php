@@ -31,11 +31,11 @@ function atme_register_content_model() {
 		'attachment',
 		array(
 			'labels'             => array(
-				'name'          => __( 'Media Folders', 'allterrain-media-explorer' ),
-				'singular_name' => __( 'Media Folder', 'allterrain-media-explorer' ),
-				'add_new_item'  => __( 'Add New Folder', 'allterrain-media-explorer' ),
-				'edit_item'     => __( 'Edit Folder', 'allterrain-media-explorer' ),
-				'search_items'  => __( 'Search Folders', 'allterrain-media-explorer' ),
+				'name'          => __( 'Media Folders', 'allterrain-maia' ),
+				'singular_name' => __( 'Media Folder', 'allterrain-maia' ),
+				'add_new_item'  => __( 'Add New Folder', 'allterrain-maia' ),
+				'edit_item'     => __( 'Edit Folder', 'allterrain-maia' ),
+				'search_items'  => __( 'Search Folders', 'allterrain-maia' ),
 			),
 			'public'             => false,
 			'show_ui'            => true,
@@ -62,8 +62,8 @@ function atme_register_content_model() {
 		ATME_COLLECTION_TYPE,
 		array(
 			'labels'              => array(
-				'name'          => __( 'Media Collections', 'allterrain-media-explorer' ),
-				'singular_name' => __( 'Media Collection', 'allterrain-media-explorer' ),
+				'name'          => __( 'Media Collections', 'allterrain-maia' ),
+				'singular_name' => __( 'Media Collection', 'allterrain-maia' ),
 			),
 			'public'              => false,
 			'show_ui'             => false,
@@ -82,7 +82,7 @@ function atme_register_content_model() {
 		ATME_META_QUERY,
 		array(
 			'type'          => 'string',
-			'description'   => __( 'The saved search this collection stands for, as JSON.', 'allterrain-media-explorer' ),
+			'description'   => __( 'The saved search this collection stands for, as JSON.', 'allterrain-maia' ),
 			'single'        => true,
 			'default'       => '',
 			'show_in_rest'  => true,
@@ -95,7 +95,7 @@ function atme_register_content_model() {
 		ATME_META_CONVERTED_FROM,
 		array(
 			'type'          => 'integer',
-			'description'   => __( 'The attachment this file was converted from.', 'allterrain-media-explorer' ),
+			'description'   => __( 'The attachment this file was converted from.', 'allterrain-maia' ),
 			'single'        => true,
 			'default'       => 0,
 			'show_in_rest'  => true,
@@ -108,7 +108,7 @@ function atme_register_content_model() {
 		ATME_META_CONVERSIONS,
 		array(
 			'type'          => 'array',
-			'description'   => __( 'Attachments converted out of this file.', 'allterrain-media-explorer' ),
+			'description'   => __( 'Attachments converted out of this file.', 'allterrain-maia' ),
 			'single'        => true,
 			'default'       => array(),
 			'show_in_rest'  => array(

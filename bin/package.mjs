@@ -4,7 +4,7 @@
  * Produces two things under `dist/`, matching the two halves of a WordPress.org
  * submission:
  *
- *   dist/allterrain-media-explorer.zip  the plugin itself, in a single `allterrain-media-explorer/`
+ *   dist/allterrain-maia.zip  the plugin itself, in a single `allterrain-maia/`
  *                             folder, so it unpacks to the right slug however it
  *                             is installed
  *   dist/assets/              the directory listing's banner and icon art, which
@@ -28,7 +28,8 @@ import { ships } from './ships.mjs';
 import { checkDirectoryAssets } from './directory-assets.mjs';
 
 const root = resolve( dirname( fileURLToPath( import.meta.url ) ), '..' );
-const slug = 'allterrain-media-explorer';
+const slug = 'allterrain-maia';
+const pluginFile = 'allterrain-media-explorer.php';
 const dist = join( root, 'dist' );
 const stage = join( dist, slug );
 
@@ -50,7 +51,7 @@ function fail( message ) {
  * the one users see is the truth.
  */
 function pluginVersion() {
-	const header = readFileSync( join( root, `${ slug }.php` ), 'utf8' );
+	const header = readFileSync( join( root, pluginFile ), 'utf8' );
 	const match = /^\s*\*\s*Version:\s*(.+)$/m.exec( header );
 
 	return match ? match[ 1 ].trim() : '0.0.0';
@@ -66,7 +67,7 @@ function pluginVersion() {
  */
 function checkVersions() {
 	const header = pluginVersion();
-	const php = readFileSync( join( root, `${ slug }.php` ), 'utf8' );
+	const php = readFileSync( join( root, pluginFile ), 'utf8' );
 	const constant = /ATME_VERSION',\s*'([^']+)'/.exec( php );
 	const readme = /^Stable tag:\s*(.+)$/m.exec( readFileSync( join( root, 'readme.txt' ), 'utf8' ) );
 	const pkg = JSON.parse( readFileSync( join( root, 'package.json' ), 'utf8' ) ).version;

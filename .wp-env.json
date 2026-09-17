@@ -1,7 +1,7 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/wp-env.json",
 	"mappings": {
-		"wp-content/plugins/allterrain-media-explorer": "."
+		"wp-content/plugins/allterrain-maia": "."
 	},
 	"port": 8894,
 	"testsPort": 8895,

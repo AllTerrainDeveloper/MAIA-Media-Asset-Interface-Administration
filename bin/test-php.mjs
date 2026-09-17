@@ -33,7 +33,7 @@ const CONTAINER = process.env.ATME_PHP_CONTAINER || 'wordpress-alcazaba-php-1';
 const CHECKOUT = resolve( root, '../wordpress-alcazaba' );
 const DEPLOYED = join( CHECKOUT, 'src/wp-content/plugins/allterrain-media-explorer' );
 const IN_CONTAINER = '/var/www/src/wp-content/plugins/allterrain-media-explorer';
-const SLUG = 'allterrain-media-explorer';
+const SLUG = 'allterrain-maia';
 
 /** Extra arguments to hand to PHPUnit, e.g. `--filter`. */
 const args = process.argv.slice( 2 );
