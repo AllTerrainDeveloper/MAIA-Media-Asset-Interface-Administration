@@ -1,6 +1,6 @@
 {
 	"name": "allterrain-media-explorer",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"private": true,
 	"description": "The media library WordPress should have shipped, as an OpenStation desktop app.",
 	"license": "GPL-2.0-or-later",
