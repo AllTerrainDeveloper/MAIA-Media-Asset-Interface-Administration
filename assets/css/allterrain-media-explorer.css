@@ -970,3 +970,75 @@
 	block-size: 100%;
 	min-block-size: 0;
 }
+
+/* Phone ------------------------------------------------------------------
+ *
+ * The shell stamps `html[data-os-mode="mobile"]` and rewrites it live, so the
+ * phone form is a stamp selector, not a width query: the same decision
+ * `statusControl()` takes in the runtime (`src/app-runtime/list-ui.ts`), and
+ * it holds at any width the phone experience is asked for. The desk layout is
+ * untouched off the stamp.
+ *
+ * The frame is three tracks (180px rail, list, 280px inspector), which is
+ * wider than a 375px leaf before the list gets a pixel. On the stamp it
+ * becomes one column: the rail scrolls horizontally above the list as a row
+ * of chips, the inspector fills the width under it, and the list row drops
+ * its third track. */
+html[data-os-mode="mobile"] .atme__frame {
+	grid-template-columns: minmax( 0, 1fr );
+	grid-template-rows: auto minmax( 0, 1fr ) auto;
+}
+
+html[data-os-mode="mobile"] .atme__sidebar {
+	display: flex;
+	gap: 8px;
+	overflow-x: auto;
+	overflow-y: visible;
+	padding: 8px;
+	border-inline-end: 0;
+	border-block-end: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+	scrollbar-width: none;
+}
+
+html[data-os-mode="mobile"] .atme-side__group {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 8px;
+	margin-block-end: 0;
+}
+
+html[data-os-mode="mobile"] .atme-side__group > os-button {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+html[data-os-mode="mobile"] .atme-inspector {
+	inline-size: auto;
+	max-block-size: 45vh;
+	border-inline-start: 0;
+	border-block-start: 1px solid var( --os-ui-border, rgba( 128, 128, 128, 0.25 ) );
+}
+
+/* Two tracks: the 40px preview and the name. The size column already hides
+ * its extension at this width (`.atme-grid--list .atme-tile__ext`). */
+html[data-os-mode="mobile"] .atme-grid--list .atme-tile {
+	grid-template-columns: 40px minmax( 0, 1fr );
+}
+
+html[data-os-mode="mobile"] .atme-grid--list .atme-tile__meta {
+	display: none;
+}
+
+/* A 148px minimum leaves two tiles with a 12px gutter at 320px. */
+html[data-os-mode="mobile"] .atme-gridhost {
+	padding: 8px;
+}
+
+html[data-os-mode="mobile"] .atme-toolbar {
+	flex-wrap: wrap;
+	padding: 8px;
+}
+
+html[data-os-mode="mobile"] .atme-toolbar__search {
+	flex: 1 1 100%;
+}
