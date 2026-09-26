@@ -4,7 +4,7 @@ Tags: media library, folders, image optimization, webp, avif
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.1
+Stable tag: 0.1.2
 Requires Plugins: desktop-mode
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -141,6 +141,10 @@ the minified bundles. Third-party notices are in assets/licenses/. The AVIF enco
 WebAssembly and bundled unmodified.
 
 == Changelog ==
+
+= 0.1.2 =
+* Adapt the media explorer to OpenStation's mobile mode with a single-column layout, a horizontally scrolling folder rail and a compact file list.
+* Special thanks to Juan Lentino (@juanlentino) for contributing this mobile layout improvement.
 
 = 0.1.1 =
 * First WordPress.org release under the approved AllTerrain MAIA name and allterrain-maia slug.
