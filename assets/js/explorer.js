@@ -85,11 +85,7 @@
     "alt_text",
     "caption.rendered",
     "description.rendered",
-    "media_details.width",
-    "media_details.height",
-    "media_details.filesize",
-    "media_details.sizes.medium.source_url",
-    "media_details.sizes.thumbnail.source_url",
+    "media_details",
     "author",
     "post",
     "atme-folders"
@@ -102,8 +98,34 @@
     template.innerHTML = rendered;
     return (template.content.textContent ?? "").trim();
   }
+  const PREVIEW_SIDE = 200;
+  function previewUrl(raw) {
+    const need = PREVIEW_SIDE * (window.devicePixelRatio || 1);
+    let cover = null;
+    let largest = null;
+    for (const [name, size] of Object.entries(raw.media_details?.sizes ?? {})) {
+      if ("full" === name || !size.source_url || !size.width || !size.height) {
+        continue;
+      }
+      const candidate = { url: size.source_url, area: size.width * size.height };
+      if (Math.min(size.width, size.height) >= need && (!cover || candidate.area < cover.area)) {
+        cover = candidate;
+      }
+      if (!largest || candidate.area > largest.area) {
+        largest = candidate;
+      }
+    }
+    if (cover) {
+      return cover.url;
+    }
+    const original = raw.media_type === "image" ? raw.source_url ?? "" : "";
+    const { width = 0, height = 0 } = raw.media_details ?? {};
+    if (original && width > 0 && Math.max(width, height) <= need * 2) {
+      return original;
+    }
+    return largest?.url ?? original;
+  }
   function toMediaItem(raw) {
-    const sizes = raw.media_details?.sizes ?? {};
     const mime = raw.mime_type ?? "";
     return {
       id: raw.id,
@@ -112,7 +134,7 @@
       mime,
       kind: raw.media_type === "image" ? "image" : mime.split("/")[0] || "file",
       url: raw.source_url ?? "",
-      thumbnail: sizes.medium?.source_url ?? sizes.thumbnail?.source_url ?? (raw.media_type === "image" ? raw.source_url ?? "" : ""),
+      thumbnail: previewUrl(raw),
       alt: raw.alt_text ?? "",
       caption: textOf(raw.caption?.rendered),
       description: textOf(raw.description?.rendered),
@@ -1429,6 +1451,7 @@
           preview.textContent = "";
           img = document.createElement("img");
           img.loading = "lazy";
+          img.decoding = "async";
           img.draggable = false;
           preview.appendChild(img);
         }

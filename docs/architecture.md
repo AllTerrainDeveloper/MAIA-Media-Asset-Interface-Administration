@@ -32,7 +32,14 @@ attachment.
 
 ## Browsing is core REST; verbs are `atme/v1`
 
-The grid pages `/wp/v2/media` with an explicit `_fields` list. Folder
+The grid pages `/wp/v2/media` with an explicit `_fields` list. That list
+names `media_details` whole: core's attachments controller only builds the
+field when its bare name is requested, so nested paths such as
+`media_details.sizes.medium.source_url` come back empty. Each tile then
+previews the smallest generated size whose short side fills the tile at the
+screen's pixel density; the original is used only when it is barely larger
+than a tile or WordPress generated no sizes at all. Full-size originals in a
+grid are re-decoded on every repaint and make the window crawl. Folder
 filtering is the taxonomy's own REST param; smart views ride a registered
 `atme_view` collection param resolved by the `rest_attachment_query` filter.
 The plugin's namespace carries only what core cannot express in one round
