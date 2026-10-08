@@ -3,7 +3,7 @@
  * Plugin Name:       AllTerrain MAIA — Media Asset Interface & Administration
  * Plugin URI:        https://github.com/AllTerrainDeveloper/MAIA-Media-Asset-Interface-Administration
  * Description:       Organize, view and optimize your WordPress media in OpenStation. Folders, collections, format conversion and restorable versions.
- * Version:           0.1.2
+ * Version:           0.1.3
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Requires Plugins:  desktop-mode
@@ -47,7 +47,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ATME_VERSION', '0.1.2' );
+define( 'ATME_VERSION', '0.1.3' );
 define( 'ATME_FILE', __FILE__ );
 define( 'ATME_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ATME_URL', plugin_dir_url( __FILE__ ) );
