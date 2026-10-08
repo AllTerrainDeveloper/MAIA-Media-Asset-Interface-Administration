@@ -177,7 +177,17 @@ async function wpRequest< T >( path: string, init: RequestInit = {}, silent = fa
 	return requestUrl< T >( restEndpoint( config.wpRestUrl, path ), init, silent );
 }
 
-/** The `_fields` list one media row needs — nothing else crosses the wire. */
+/**
+ * The `_fields` list one media row needs — nothing else crosses the wire.
+ *
+ * `media_details` is asked for whole on purpose. Core's attachments
+ * controller only builds it when the bare name is in `_fields`; a nested
+ * path such as `media_details.sizes.medium.source_url` matches the schema
+ * but never populates the field. Asking for the parts silently returned no
+ * sizes, so every tile fell back to the full-size original — and a grid of
+ * 4000px originals re-decodes on every repaint, dragging the window at a few
+ * frames a second.
+ */
 const MEDIA_FIELDS = [
 	'id',
 	'title.rendered',
@@ -188,15 +198,18 @@ const MEDIA_FIELDS = [
 	'alt_text',
 	'caption.rendered',
 	'description.rendered',
-	'media_details.width',
-	'media_details.height',
-	'media_details.filesize',
-	'media_details.sizes.medium.source_url',
-	'media_details.sizes.thumbnail.source_url',
+	'media_details',
 	'author',
 	'post',
 	'atme-folders',
 ].join( ',' );
+
+/** One generated sub-size in `media_details.sizes`. */
+interface RawSize {
+	source_url?: string;
+	width?: number;
+	height?: number;
+}
 
 /** The raw REST row `MEDIA_FIELDS` produces. */
 interface RawMedia {
@@ -213,7 +226,7 @@ interface RawMedia {
 		width?: number;
 		height?: number;
 		filesize?: number;
-		sizes?: Record< string, { source_url?: string } >;
+		sizes?: Record< string, RawSize >;
 	};
 	author?: number;
 	post?: number | null;
@@ -234,9 +247,63 @@ function textOf( rendered?: string ): string {
 	return ( template.content.textContent ?? '' ).trim();
 }
 
+/**
+ * The shortest side, in CSS pixels, a grid preview has to cover.
+ *
+ * Tiles are `object-fit: cover` squares that grow to about this size, so a
+ * preview whose short side falls below it is upscaled and soft.
+ */
+const PREVIEW_SIDE = 200;
+
+/**
+ * Picks the cheapest generated size that still fills a tile.
+ *
+ * The smallest sub-size whose short side covers the tile at this screen's
+ * density wins; when none does, the largest one there is. The original is
+ * only the answer for an image WordPress made no sizes for — decoding
+ * originals is what made a full grid slow.
+ *
+ * @param raw The REST row.
+ */
+function previewUrl( raw: RawMedia ): string {
+	const need = PREVIEW_SIDE * ( window.devicePixelRatio || 1 );
+	let cover: { url: string; area: number } | null = null;
+	let largest: { url: string; area: number } | null = null;
+
+	for ( const [ name, size ] of Object.entries( raw.media_details?.sizes ?? {} ) ) {
+		if ( 'full' === name || ! size.source_url || ! size.width || ! size.height ) {
+			continue;
+		}
+
+		const candidate = { url: size.source_url, area: size.width * size.height };
+
+		if ( Math.min( size.width, size.height ) >= need && ( ! cover || candidate.area < cover.area ) ) {
+			cover = candidate;
+		}
+
+		if ( ! largest || candidate.area > largest.area ) {
+			largest = candidate;
+		}
+	}
+
+	if ( cover ) {
+		return cover.url;
+	}
+
+	const original = raw.media_type === 'image' ? raw.source_url ?? '' : '';
+	const { width = 0, height = 0 } = raw.media_details ?? {};
+
+	// An original barely bigger than a tile is sharper than its upscaled
+	// thumbnail and just as cheap to decode.
+	if ( original && width > 0 && Math.max( width, height ) <= need * 2 ) {
+		return original;
+	}
+
+	return largest?.url ?? original;
+}
+
 /** One REST row → one grid item. */
 function toMediaItem( raw: RawMedia ): MediaItem {
-	const sizes = raw.media_details?.sizes ?? {};
 	const mime = raw.mime_type ?? '';
 
 	return {
@@ -246,7 +313,7 @@ function toMediaItem( raw: RawMedia ): MediaItem {
 		mime,
 		kind: raw.media_type === 'image' ? 'image' : mime.split( '/' )[ 0 ] || 'file',
 		url: raw.source_url ?? '',
-		thumbnail: sizes.medium?.source_url ?? sizes.thumbnail?.source_url ?? ( raw.media_type === 'image' ? raw.source_url ?? '' : '' ),
+		thumbnail: previewUrl( raw ),
 		alt: raw.alt_text ?? '',
 		caption: textOf( raw.caption?.rendered ),
 		description: textOf( raw.description?.rendered ),

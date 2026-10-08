@@ -277,6 +277,7 @@ export class MediaGrid {
 				preview.textContent = '';
 				img = document.createElement( 'img' );
 				img.loading = 'lazy';
+				img.decoding = 'async';
 				img.draggable = false;
 				preview.appendChild( img );
 			}
