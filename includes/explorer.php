@@ -3,7 +3,7 @@
  * WP Explorer integration, server half.
  *
  * WP Explorer already has a Media section; this plugin does not replace it,
- * it decorates it: a "Reveal in Media Explorer" action on every media
+ * it decorates it: an "Open in AllTerrain MAIA" action on every media
  * preview, registered here because preview actions are server-declared —
  * capability-gated and enumerated in PHP — while their behaviour is wired
  * client-side in the shell bundle.
@@ -33,7 +33,7 @@ function atme_maybe_init_explorer() {
 }
 
 /**
- * Adds the reveal action to WP Explorer's media previews.
+ * Adds the open-in-viewer action to WP Explorer's media previews.
  *
  * @since 0.1.0
  *
@@ -43,7 +43,7 @@ function atme_maybe_init_explorer() {
 function atme_explorer_preview_actions( $actions ) {
 	$actions[] = array(
 		'id'         => 'atme-reveal',
-		'label'      => __( 'Reveal in AllTerrain MAIA', 'allterrain-maia' ),
+		'label'      => __( 'Open in AllTerrain MAIA', 'allterrain-maia' ),
 		'icon'       => 'dashicons-format-gallery',
 		'capability' => 'upload_files',
 		'sections'   => array( 'media' ),

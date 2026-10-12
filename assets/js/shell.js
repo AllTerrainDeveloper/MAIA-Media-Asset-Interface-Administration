@@ -131,7 +131,7 @@
       return actions.map(
         (action) => action?.id === "atme-reveal" ? {
           ...action,
-          onSelect: (context) => openAndReveal(previewActionMediaId(context))
+          onSelect: (context) => openViewer(previewActionMediaId(context))
         } : action
       );
     });

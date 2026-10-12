@@ -1,8 +1,8 @@
 /**
- * "Reveal in AllTerrain MAIA" from a WP Explorer media preview.
+ * "Open in AllTerrain MAIA" from a WP Explorer media preview.
  *
  * The bug this pins: the handler read `mediaId`/`postId`, which WP Explorer
- * never sends, so the library opened with nothing selected. The context's
+ * never sends, so AllTerrain MAIA opened with nothing in it. The context's
  * real fields are `itemId` and `item.id`.
  */
 

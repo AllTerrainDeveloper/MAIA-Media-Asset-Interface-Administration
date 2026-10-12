@@ -4,7 +4,7 @@
  * WP Explorer hands `onSelect` its `PreviewActionContext`: the selected
  * entity under `item` and a numeric convenience copy of its id under
  * `itemId`. There is no `mediaId` or `postId` — reading those once made
- * "Reveal in AllTerrain MAIA" open the library with nothing selected.
+ * the action open AllTerrain MAIA with nothing in it.
  */
 
 /** The fields of WP Explorer's preview-action context this plugin reads. */

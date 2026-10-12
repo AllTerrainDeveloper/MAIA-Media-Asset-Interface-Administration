@@ -8,7 +8,7 @@
  *   1. The file opener — double-clicking any `attachment` desktop file
  *      opens the explorer revealing that item.
  *   2. The ⌘K commands — open the explorer, start the wizard.
- *   3. WP Explorer's "Reveal in Media Explorer" preview action — the PHP
+ *   3. WP Explorer's "Open in AllTerrain MAIA" preview action — the PHP
  *      half declared the button; this wires what it does.
  */
 
@@ -182,7 +182,7 @@ function wireExplorerAction(): void {
 				? {
 						...action,
 						onSelect: ( context: PreviewActionContext ) =>
-							openAndReveal( previewActionMediaId( context ) ),
+							openViewer( previewActionMediaId( context ) ),
 				  }
 				: action
 		);
