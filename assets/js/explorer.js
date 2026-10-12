@@ -4076,6 +4076,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     } };
   }
   const REVEAL_TOPIC = "atme.reveal";
+  const REVEAL_MAX_PAGES = 10;
   const SMART_VIEWS = [
     { slug: "", label: "All media", icon: "dashicons-format-gallery" },
     { slug: "unattached", label: "Unattached", icon: "dashicons-editor-unlink" },
@@ -5033,14 +5034,34 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       if (!this.grid) {
         return;
       }
-      if (!this.grid.getItems().some((item2) => item2.id === id)) {
+      const loaded = () => this.grid?.getItems().find((candidate) => candidate.id === id);
+      if (!loaded()) {
         this.query = { ...DEFAULT_QUERY };
         await this.runQuery();
+        const epoch = this.queryEpoch;
+        while (!this.disposed && !loaded() && epoch === this.queryEpoch && this.page > 0 && this.page < Math.min(this.totalPages, REVEAL_MAX_PAGES)) {
+          const before = this.page;
+          await this.loadMore().catch(() => void 0);
+          if (this.page === before) {
+            break;
+          }
+        }
       }
-      this.grid.reveal(id);
-      const item = this.grid.getItems().find((candidate) => candidate.id === id);
+      if (this.disposed || !this.grid) {
+        return;
+      }
+      const item = loaded();
       if (item) {
+        this.grid.reveal(id);
         this.openItem(item);
+        return;
+      }
+      try {
+        const fetched = await fetchMediaItem(id);
+        if (!this.disposed) {
+          this.openItem(fetched);
+        }
+      } catch {
       }
     }
     /**

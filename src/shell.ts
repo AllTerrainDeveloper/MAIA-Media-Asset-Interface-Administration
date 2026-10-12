@@ -13,6 +13,7 @@
  */
 
 import { getShell } from './api';
+import { previewActionMediaId, type PreviewActionContext } from './preview-action';
 import { openViewer } from './view-open';
 
 const WINDOW_ID = 'allterrain-media-explorer';
@@ -180,8 +181,8 @@ function wireExplorerAction(): void {
 			action?.id === 'atme-reveal'
 				? {
 						...action,
-						onSelect: ( context: { postId?: number; mediaId?: number } ) =>
-							openAndReveal( Number( context?.mediaId ?? context?.postId ?? 0 ) ),
+						onSelect: ( context: PreviewActionContext ) =>
+							openAndReveal( previewActionMediaId( context ) ),
 				  }
 				: action
 		);
