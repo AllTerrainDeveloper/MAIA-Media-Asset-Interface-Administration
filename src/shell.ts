@@ -8,11 +8,12 @@
  *   1. The file opener — double-clicking any `attachment` desktop file
  *      opens the explorer revealing that item.
  *   2. The ⌘K commands — open the explorer, start the wizard.
- *   3. WP Explorer's "Reveal in Media Explorer" preview action — the PHP
+ *   3. WP Explorer's "Open in AllTerrain MAIA" preview action — the PHP
  *      half declared the button; this wires what it does.
  */
 
 import { getShell } from './api';
+import { previewActionMediaId, type PreviewActionContext } from './preview-action';
 import { openViewer } from './view-open';
 
 const WINDOW_ID = 'allterrain-media-explorer';
@@ -180,8 +181,8 @@ function wireExplorerAction(): void {
 			action?.id === 'atme-reveal'
 				? {
 						...action,
-						onSelect: ( context: { postId?: number; mediaId?: number } ) =>
-							openAndReveal( Number( context?.mediaId ?? context?.postId ?? 0 ) ),
+						onSelect: ( context: PreviewActionContext ) =>
+							openViewer( previewActionMediaId( context ) ),
 				  }
 				: action
 		);

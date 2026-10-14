@@ -5,6 +5,10 @@
     const wp = window.wp;
     return wp?.os ?? null;
   }
+  function previewActionMediaId(context) {
+    const id = Number(context?.itemId ?? context?.item?.id ?? 0);
+    return Number.isSafeInteger(id) && id > 0 ? id : 0;
+  }
   const VIEWER_WINDOW_ID = "atme-viewer";
   const VIEW_TOPIC = "atme.view";
   function openViewer(id) {
@@ -127,7 +131,7 @@
       return actions.map(
         (action) => action?.id === "atme-reveal" ? {
           ...action,
-          onSelect: (context) => openAndReveal(Number(context?.mediaId ?? context?.postId ?? 0))
+          onSelect: (context) => openViewer(previewActionMediaId(context))
         } : action
       );
     });

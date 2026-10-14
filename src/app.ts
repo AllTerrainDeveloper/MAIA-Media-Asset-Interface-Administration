@@ -46,6 +46,9 @@ export type Teardown = () => void;
 /** The topic the eager shell bundle asks a window to reveal an item on. */
 export const REVEAL_TOPIC = 'atme.reveal';
 
+/** How many pages a reveal walks before showing the item without its tile. */
+const REVEAL_MAX_PAGES = 10;
+
 /** The smart views the sidebar offers. Server-side ones filter in REST. */
 const SMART_VIEWS: Array< { slug: string; label: string; icon: string } > = [
 	{ slug: '', label: 'All media', icon: 'dashicons-format-gallery' },
@@ -1232,18 +1235,56 @@ class ExplorerApp {
 			return;
 		}
 
-		if ( ! this.grid.getItems().some( ( item ) => item.id === id ) ) {
+		const loaded = () => this.grid?.getItems().find( ( candidate ) => candidate.id === id );
+
+		if ( ! loaded() ) {
 			// Not on any loaded page — reset to the plain library so it can be.
 			this.query = { ...DEFAULT_QUERY };
 			await this.runQuery();
+
+			// Older items sit pages deep: walk forward until the tile loads,
+			// unless the user moves to another query meanwhile.
+			const epoch = this.queryEpoch;
+
+			while (
+				! this.disposed &&
+				! loaded() &&
+				epoch === this.queryEpoch &&
+				this.page > 0 &&
+				this.page < Math.min( this.totalPages, REVEAL_MAX_PAGES )
+			) {
+				const before = this.page;
+
+				await this.loadMore().catch( () => undefined );
+
+				if ( this.page === before ) {
+					break;
+				}
+			}
 		}
 
-		this.grid.reveal( id );
+		if ( this.disposed || ! this.grid ) {
+			return;
+		}
 
-		const item = this.grid.getItems().find( ( candidate ) => candidate.id === id );
+		const item = loaded();
 
 		if ( item ) {
+			this.grid.reveal( id );
 			this.openItem( item );
+
+			return;
+		}
+
+		// Beyond the walk: inspect it without a tile rather than show nothing.
+		try {
+			const fetched = await fetchMediaItem( id );
+
+			if ( ! this.disposed ) {
+				this.openItem( fetched );
+			}
+		} catch {
+			// Deleted or forbidden — the library stays as it is.
 		}
 	}
 
