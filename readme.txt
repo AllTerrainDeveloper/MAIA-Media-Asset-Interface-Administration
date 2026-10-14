@@ -4,7 +4,7 @@ Tags: media library, folders, image optimization, webp, avif
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.3
+Stable tag: 0.1.4
 Requires Plugins: desktop-mode
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -141,6 +141,10 @@ the minified bundles. Third-party notices are in assets/licenses/. The AVIF enco
 WebAssembly and bundled unmodified.
 
 == Changelog ==
+
+= 0.1.4 =
+* "Open in AllTerrain MAIA" in WP Explorer's media preview (previously "Reveal in AllTerrain MAIA") now opens the selected file in the AllTerrain MAIA Viewer. Before, it opened the library with nothing selected.
+* Revealing a file in the library now finds and selects older files that sit several pages deep.
 
 = 0.1.3 =
 * Make the media explorer fast with large libraries: grid tiles now load WordPress's generated image sizes instead of full-size originals, which made the window sluggish to scroll and drag.
