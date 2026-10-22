@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit;
  * in between leave posts pointing at the first URLs; remembering a few lets
  * the next update rewrite all of them to the current file.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @return int Cap.
  */
@@ -31,7 +31,7 @@ function atme_previous_urls_cap() {
 	/**
 	 * Filters how many earlier URL maps an attachment keeps.
 	 *
-	 * @since 0.1.5
+	 * @since 1.0.0
 	 *
 	 * @param int $cap Default 10.
 	 */
@@ -45,7 +45,7 @@ function atme_previous_urls_cap() {
  * scaled the upload), `original` the untouched upload when it differs, and
  * every registered sub-size by its own name.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param int $attachment_id Attachment.
  * @return array<string,string> Size name → URL. Empty when there is no file.
@@ -88,7 +88,7 @@ function atme_attachment_url_map( $attachment_id ) {
  * old sub-size names are gone from the metadata and there is nothing left to
  * say what posts used to point at.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param int $attachment_id Attachment.
  * @return void
@@ -116,7 +116,7 @@ function atme_remember_previous_urls( $attachment_id ) {
 /**
  * The URL maps an attachment answered at before its replacements.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param int $attachment_id Attachment.
  * @return array[] Size → URL maps, oldest first.
@@ -134,7 +134,7 @@ function atme_previous_url_maps( $attachment_id ) {
  * names the source. Anything else is a swap between unrelated files, which
  * is not what this verb is for.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param int $from The attachment posts use now.
  * @param int $to   The attachment they should use.
@@ -169,7 +169,7 @@ function atme_validate_reference_pair( $from, $to ) {
  *
  * Longest URL first, so a full URL can never clip the front off a sub-size.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param int $from The attachment posts use now.
  * @param int $to   The attachment they should use.
@@ -218,7 +218,7 @@ function atme_reference_url_pairs( $from, $to ) {
 	 *
 	 * A CDN that serves media from another host adds its own spellings here.
 	 *
-	 * @since 0.1.5
+	 * @since 1.0.0
 	 *
 	 * @param array<string,string> $pairs Old URL → new URL, longest first.
 	 * @param int                  $from  The attachment posts use now.
@@ -235,7 +235,7 @@ function atme_reference_url_pairs( $from, $to ) {
  * `mediaId`, a gallery's `ids`), a gallery image's `data-id`, and the
  * `[gallery ids=""]` shortcode.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param string $content Post content.
  * @param int    $from    The attachment the content uses now.
@@ -314,7 +314,7 @@ function atme_rewrite_content_references( $content, $from, $to, $pairs ) {
  * in-place conversion also searches for its remembered filename stems, in
  * case the new file landed under a different name.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param int $from The attachment posts use now.
  * @param int $to   The attachment they should use.
@@ -384,7 +384,7 @@ function atme_reference_candidates( $from, $to ) {
 	/**
 	 * Filters the posts offered for an update after a conversion.
 	 *
-	 * @since 0.1.5
+	 * @since 1.0.0
 	 *
 	 * @param array[] $rows Usage rows.
 	 * @param int     $from The attachment posts use now.
@@ -401,7 +401,7 @@ function atme_reference_candidates( $from, $to ) {
  * kses a manual save would apply. For a copy, a featured image that named
  * the source is pointed at the copy.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param int $post_id The post to update.
  * @param int $from    The attachment it uses now.
@@ -480,7 +480,7 @@ function atme_update_post_references( $post_id, $from, $to ) {
 	 * Fires for unchanged posts too, so a builder storing its own copy of
 	 * the URL in meta gets its chance either way.
 	 *
-	 * @since 0.1.5
+	 * @since 1.0.0
 	 *
 	 * @param int   $post_id The post.
 	 * @param int   $from    The attachment it used.
@@ -495,7 +495,7 @@ function atme_update_post_references( $post_id, $from, $to ) {
 /**
  * A post's content with its references moved, filters applied.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param WP_Post $post  The post.
  * @param int     $from  The attachment it uses now.
@@ -512,7 +512,7 @@ function atme_rewritten_post_content( $post, $from, $to, $pairs ) {
 	 * The seam for markup this plugin does not know — a gallery shortcode of
 	 * some other plugin's, a builder's inline JSON.
 	 *
-	 * @since 0.1.5
+	 * @since 1.0.0
 	 *
 	 * @param string  $content The rewritten content.
 	 * @param WP_Post $post    The post, with its content as stored.
@@ -528,7 +528,7 @@ function atme_rewritten_post_content( $post, $from, $to, $pairs ) {
 /**
  * Whether updating a post would change anything — the dry run.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param int   $post_id The post.
  * @param int   $from    The attachment it uses now.

@@ -465,7 +465,7 @@ function atme_rest_usage( $request ) {
 /**
  * Whether the current user may edit both halves of a conversion pair.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param WP_REST_Request $request Request.
  * @return bool Permission.
@@ -478,7 +478,7 @@ function atme_can_edit_reference_pair( $request ) {
 /**
  * GET /references — the posts that should move to a converted file.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param WP_REST_Request $request Request.
  * @return WP_REST_Response|WP_Error Response.
@@ -496,7 +496,7 @@ function atme_rest_reference_candidates( $request ) {
 /**
  * POST /references — move one post to the converted file.
  *
- * @since 0.1.5
+ * @since 1.0.0
  *
  * @param WP_REST_Request $request Request.
  * @return WP_REST_Response|WP_Error Response.
