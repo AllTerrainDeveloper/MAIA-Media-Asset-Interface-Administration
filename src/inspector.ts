@@ -24,6 +24,7 @@ import { suggestAltText } from './ai';
 import { confirmAndDelete } from './app';
 import { browserEncodeSupport, downloadAs } from './convert-client';
 import { readExif } from './exif';
+import { offerReferenceUpdate, type ConversionPair, type ReferenceUpdate } from './reference-update';
 import {
 	buttonControl,
 	checkboxControl,
@@ -70,6 +71,19 @@ function formatBytes( bytes: number ): string {
 export function mountInspector( host: HTMLElement, delegate: InspectorDelegate ): Inspector {
 	let current: MediaItem | null = null;
 	let epoch = 0;
+	// Lives across repaints: the dialog sits over the whole desktop, and
+	// selecting another photo mid-update must not cut the run short.
+	let referenceUpdate: ReferenceUpdate | null = null;
+	let refreshUsage: ( () => void ) | null = null;
+
+	const offerReferences = ( pair: ConversionPair, format: string ) => {
+		referenceUpdate?.destroy();
+		referenceUpdate = offerReferenceUpdate( {
+			pairs: [ pair ],
+			format,
+			onFinished: () => refreshUsage?.(),
+		} );
+	};
 
 	host.classList.add( 'atme-inspector' );
 
@@ -361,9 +375,9 @@ export function mountInspector( host: HTMLElement, delegate: InspectorDelegate )
 
 		/* Convert --------------------------------------------------------- */
 		if ( item.kind === 'image' ) {
-			host.appendChild( buildConvertSection( item, delegate ) );
+			host.appendChild( buildConvertSection( item, delegate, offerReferences ) );
 			host.appendChild( buildDownloadAsSection( item ) );
-			host.appendChild( buildReplaceSection( item, delegate ) );
+			host.appendChild( buildReplaceSection( item, delegate, offerReferences ) );
 		}
 
 		/* Used in ---------------------------------------------------------- */
@@ -383,17 +397,23 @@ export function mountInspector( host: HTMLElement, delegate: InspectorDelegate )
 		usageSection.appendChild( usageBody );
 		host.appendChild( usageSection );
 
-		void fetchUsage( item.id )
-			.then( ( rows ) => {
-				if ( epoch !== thisEpoch ) {
-					return;
-				}
+		const loadUsage = () =>
+			void fetchUsage( item.id )
+				.then( ( rows ) => {
+					if ( epoch !== thisEpoch ) {
+						return;
+					}
 
-				paintUsage( usageBody, rows );
-			} )
-			.catch( () => {
-				usageBody.textContent = 'Could not be determined.';
-			} );
+					paintUsage( usageBody, rows );
+				} )
+				.catch( () => {
+					if ( epoch === thisEpoch ) {
+						usageBody.textContent = 'Could not be determined.';
+					}
+				} );
+
+		loadUsage();
+		refreshUsage = loadUsage;
 
 		/* Versions --------------------------------------------------------- */
 		const versionsSection = document.createElement( 'div' );
@@ -529,12 +549,24 @@ export function mountInspector( host: HTMLElement, delegate: InspectorDelegate )
 			epoch += 1;
 			host.textContent = '';
 			current = null;
+			refreshUsage = null;
+			referenceUpdate?.destroy();
+			referenceUpdate = null;
 		},
 	};
 }
 
-/** The convert controls: format, quality, copy-or-replace. */
-function buildConvertSection( item: MediaItem, delegate: InspectorDelegate ): HTMLElement {
+/**
+ * The convert controls: format, quality, copy-or-replace.
+ *
+ * @param onConverted Hears each successful conversion, to offer moving the
+ *                    posts that still use the old file.
+ */
+function buildConvertSection(
+	item: MediaItem,
+	delegate: InspectorDelegate,
+	onConverted: ( pair: ConversionPair, format: string ) => void
+): HTMLElement {
 	const section = document.createElement( 'div' );
 
 	section.className = 'atme-inspector__section';
@@ -618,8 +650,10 @@ function buildConvertSection( item: MediaItem, delegate: InspectorDelegate ): HT
 	const run = () => {
 		go.setAttribute( 'disabled', '' );
 
+		const format = state.format;
+
 		void convertMedia( item.id, {
-			format: state.format,
+			format,
 			quality: state.quality,
 			strip_meta: state.stripMeta,
 			replace: state.replace,
@@ -633,6 +667,7 @@ function buildConvertSection( item: MediaItem, delegate: InspectorDelegate ): HT
 						: 'Converted copy created',
 				} );
 				delegate.onChanged( item );
+				onConverted( { from: item.id, to: result.id }, format );
 			} )
 			.catch( ( error: Error ) => {
 				getShell()?.notify?.( { title: 'Conversion failed', body: error.message, type: 'error' } );
@@ -647,8 +682,17 @@ function buildConvertSection( item: MediaItem, delegate: InspectorDelegate ): HT
 	return section;
 }
 
-/** The replace-file well. */
-function buildReplaceSection( item: MediaItem, delegate: InspectorDelegate ): HTMLElement {
+/**
+ * The replace-file well.
+ *
+ * @param onReplaced Hears each successful replace. A same-format file keeps
+ *                   every URL, so the offer then finds nothing and stays shut.
+ */
+function buildReplaceSection(
+	item: MediaItem,
+	delegate: InspectorDelegate,
+	onReplaced: ( pair: ConversionPair, format: string ) => void
+): HTMLElement {
 	const section = document.createElement( 'div' );
 
 	section.className = 'atme-inspector__section';
@@ -659,7 +703,7 @@ function buildReplaceSection( item: MediaItem, delegate: InspectorDelegate ): HT
 	section.appendChild( title );
 
 	section.appendChild(
-		noticeEl( 'The old file becomes a version. Same-format replacements keep the URL. Changing format changes the URL; existing embedded links may need updating.' )
+		noticeEl( 'The old file becomes a version. Same-format replacements keep the URL. Changing format changes the URL, and you will be offered to update the posts that use it.' )
 	);
 
 	const picker = document.createElement( 'input' );
@@ -686,6 +730,7 @@ function buildReplaceSection( item: MediaItem, delegate: InspectorDelegate ): HT
 			.then( () => {
 				getShell()?.showToast?.( { message: 'File replaced' } );
 				delegate.onChanged( item );
+				onReplaced( { from: item.id, to: item.id }, file.type.replace( /^image\//, '' ) || 'new file' );
 			} )
 			.catch( ( error: Error ) => {
 				getShell()?.notify?.( { title: 'Replace failed', body: error.message, type: 'error' } );

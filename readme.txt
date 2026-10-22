@@ -36,8 +36,11 @@ Forms and AllTerrain Photo Editor.
   on hosts whose Imagick reads HEIC.
 * **Replace in place** — keep the attachment ID and retain the previous
   original as a restorable version. Same-format replacements keep the URL.
-  Changing format changes the extension and URL; existing embedded links
-  may need updating.
+  Changing format changes the extension and URL, so you are offered to
+  update the posts that embed the old file.
+* **Posts follow the conversion** — after converting, confirm once and watch
+  each post that used the image switch to the new file in a progress dialog.
+  Posts with revisions get a new one, so every change can be undone.
 * **The Optimization Wizard** — scans the library for oversized images,
   legacy formats, missing alt text and duplicate files; shows the findings;
   applies the fixes you pick as a resumable batch.
@@ -89,8 +92,11 @@ in the library and its child folders move up one level.
 = Does replacement keep existing links working? =
 
 Same-format replacements keep the attachment ID and URL. Changing format changes
-the file extension and URL. AllTerrain MAIA does not rewrite existing embedded URLs; review
-those links after converting in place. Previous originals are kept as versions.
+the file extension and URL. After converting or replacing with a new format,
+AllTerrain MAIA lists the posts that embed the old file and, once you confirm,
+updates them one at a time with a progress dialog. Posts that keep revisions get
+one, so each change can be undone. Page builders that store URLs outside the post
+content need their own integration. Previous originals are kept as versions.
 
 = Can I convert HEIC and AVIF on any host? =
 

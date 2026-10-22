@@ -126,6 +126,41 @@ function atme_register_rest_routes() {
 		)
 	);
 
+	$pair_args = array(
+		'from' => array_merge( $id_arg, array( 'description' => __( 'The attachment posts use now.', 'allterrain-maia' ) ) ),
+		'to'   => array_merge( $id_arg, array( 'description' => __( 'The converted attachment they should use. The same ID for an in-place conversion.', 'allterrain-maia' ) ) ),
+	);
+
+	register_rest_route(
+		ATME_REST_NAMESPACE,
+		'/references',
+		array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => 'atme_rest_reference_candidates',
+				'permission_callback' => 'atme_can_edit_reference_pair',
+				'args'                => $pair_args,
+			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => 'atme_rest_update_references',
+				'permission_callback' => 'atme_can_edit_reference_pair',
+				'args'                => array_merge(
+					$pair_args,
+					array(
+						'post' => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'minimum'           => 1,
+							'description'       => __( 'The post to update. One per request, so a client can report each as it lands.', 'allterrain-maia' ),
+							'sanitize_callback' => 'absint',
+						),
+					)
+				),
+			),
+		)
+	);
+
 	register_rest_route(
 		ATME_REST_NAMESPACE,
 		'/facts/(?P<id>\d+)',
@@ -425,6 +460,55 @@ function atme_rest_rollback( $request ) {
  */
 function atme_rest_usage( $request ) {
 	return rest_ensure_response( atme_media_usage( (int) $request['id'] ) );
+}
+
+/**
+ * Whether the current user may edit both halves of a conversion pair.
+ *
+ * @since 0.1.5
+ *
+ * @param WP_REST_Request $request Request.
+ * @return bool Permission.
+ */
+function atme_can_edit_reference_pair( $request ) {
+	return atme_can_edit_media( array( 'id' => $request['from'] ) )
+		&& atme_can_edit_media( array( 'id' => $request['to'] ) );
+}
+
+/**
+ * GET /references — the posts that should move to a converted file.
+ *
+ * @since 0.1.5
+ *
+ * @param WP_REST_Request $request Request.
+ * @return WP_REST_Response|WP_Error Response.
+ */
+function atme_rest_reference_candidates( $request ) {
+	$valid = atme_validate_reference_pair( (int) $request['from'], (int) $request['to'] );
+
+	if ( is_wp_error( $valid ) ) {
+		return $valid;
+	}
+
+	return rest_ensure_response( atme_reference_candidates( (int) $request['from'], (int) $request['to'] ) );
+}
+
+/**
+ * POST /references — move one post to the converted file.
+ *
+ * @since 0.1.5
+ *
+ * @param WP_REST_Request $request Request.
+ * @return WP_REST_Response|WP_Error Response.
+ */
+function atme_rest_update_references( $request ) {
+	$result = atme_update_post_references( (int) $request['post'], (int) $request['from'], (int) $request['to'] );
+
+	if ( is_wp_error( $result ) ) {
+		return $result;
+	}
+
+	return rest_ensure_response( $result );
 }
 
 /**

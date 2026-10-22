@@ -78,6 +78,56 @@ report the usages only they know about. Rows referring to posts the current user
 filter. Rows feed the inspector's "Used in"
 panel, the delete guard, and the window's relations identity.
 
+## Post references
+
+Updating the posts that still use a file after it was converted. See
+[architecture](architecture.md#updating-posts-after-a-conversion).
+
+### `atme_reference_candidates` — filter — Experimental
+
+```php
+apply_filters( 'atme_reference_candidates', array $rows, int $from, int $to );
+```
+
+The posts offered for an update, as usage rows. Already narrowed to editable
+posts whose update would change something. `$to === $from` after an in-place
+conversion.
+
+### `atme_reference_url_pairs` — filter — Experimental
+
+```php
+apply_filters( 'atme_reference_url_pairs', array $pairs, int $from, int $to );
+// $pairs = [ 'https://…/photo-300x200.jpg' => 'https://…/photo-300x200.webp', … ];
+```
+
+Old URL → new URL, longest first. A CDN serving media from another host adds
+its own spellings here.
+
+### `atme_rewrite_post_references` — filter — Experimental
+
+```php
+apply_filters( 'atme_rewrite_post_references', string $content, WP_Post $post, int $from, int $to, array $pairs );
+```
+
+The post content after the built-in rewrite, before it is saved. Also used by
+the dry run that decides whether a post is offered, so a rewrite added here
+makes the post appear in the dialog.
+
+### `atme_post_references_updated` — action — Experimental
+
+```php
+do_action( 'atme_post_references_updated', int $post_id, int $from, int $to, array $result );
+// $result = [ 'postId', 'title', 'replaced', 'featured', 'changed' ];
+```
+
+After one post was processed, changed or not. The moment for a page builder
+to rewrite the copy of the URL it keeps in its own meta.
+
+### `atme_previous_urls_cap` — filter — Experimental
+
+How many earlier URL maps an attachment remembers for in-place updates.
+Default 10.
+
 ## Wizard
 
 ### `atme_wizard_oversize_width` — filter — Stable

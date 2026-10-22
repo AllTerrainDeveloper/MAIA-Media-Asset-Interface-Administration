@@ -22,6 +22,7 @@ import type {
 	Folder,
 	LibraryQuery,
 	MediaItem,
+	ReferenceUpdate,
 	ScanChunk,
 	ShellApi,
 	UsageRow,
@@ -509,6 +510,35 @@ export async function rollbackVersion( id: number, file: string ): Promise< void
 /** Everywhere the file is used. */
 export function fetchUsage( id: number ): Promise< UsageRow[] > {
 	return request( `/usage/${ id }`, {}, true );
+}
+
+/**
+ * The posts that should move from one attachment to its converted file.
+ *
+ * `to` is `from` itself after an in-place conversion.
+ */
+export function fetchReferenceCandidates( from: number, to: number ): Promise< UsageRow[] > {
+	return request( `/references?from=${ from }&to=${ to }`, {}, true );
+}
+
+/**
+ * Moves one post to the converted file.
+ *
+ * One post per request on purpose, so a progress dialog can show each land.
+ * Announces the post on its type's content-change topic, which is how an
+ * editor window already showing it learns to reload.
+ */
+export async function updatePostReferences( post: number, from: number, to: number, type = '' ): Promise< ReferenceUpdate > {
+	const result = await request< ReferenceUpdate >( '/references', {
+		method: 'POST',
+		body: JSON.stringify( { post, from, to } ),
+	} );
+
+	if ( result.changed && type ) {
+		getShell()?.broadcast?.( `os.${ type }.changed`, { source: BROADCAST_SOURCE, action: 'updated', ids: [ post ] } );
+	}
+
+	return result;
 }
 
 /** File facts and provenance for the inspector. */

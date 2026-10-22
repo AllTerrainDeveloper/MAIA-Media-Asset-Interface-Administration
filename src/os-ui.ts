@@ -48,6 +48,7 @@ export const COMPONENT_TAGS = [
 	'os-checkbox-label',
 	'os-range-field',
 	'os-notice',
+	'os-modal',
 	'os-empty-state',
 	'os-progress-bar',
 	'os-steps',
@@ -519,4 +520,163 @@ export function noticeEl( message: string, tone: 'info' | 'warning' = 'info' ): 
 	notice.textContent = message;
 
 	return notice;
+}
+
+/** A modal opened by {@link modalControl}. */
+export interface Modal {
+	/** Body content goes here. */
+	readonly body: HTMLElement;
+	/** The button row. */
+	readonly footer: HTMLElement;
+	/**
+	 * Locks the dialog open: no Escape, no backdrop click, no close button.
+	 * For the stretch where closing would hide work still in flight.
+	 */
+	setMandatory( on: boolean ): void;
+	/** Closes and removes the dialog. Idempotent. */
+	close(): void;
+}
+
+/**
+ * A modal dialog, `<os-modal>` in the shell and a native `<dialog>` outside it.
+ *
+ * Mounted on `document.body` and opened at once, the way the shell's own
+ * confirm dialog is. `onCancel` hears Escape, the backdrop and the close
+ * button — never while the dialog is mandatory — and the dialog has already
+ * been removed when it fires.
+ */
+export function modalControl( opts: {
+	title: string;
+	size?: 'sm' | 'md' | 'lg';
+	className?: string;
+	onCancel: () => void;
+} ): Modal {
+	const body = document.createElement( 'div' );
+	const footer = document.createElement( 'div' );
+	let closed = false;
+
+	body.className = opts.className ?? '';
+
+	if ( registered( 'os-modal' ) ) {
+		const modal = document.createElement( 'os-modal' );
+
+		modal.setAttribute( 'title', opts.title );
+		modal.setAttribute( 'size', opts.size ?? 'md' );
+		footer.setAttribute( 'slot', 'footer' );
+		footer.className = 'atme-modal__footer';
+		modal.append( body, footer );
+
+		const close = () => {
+			if ( ! closed ) {
+				closed = true;
+				modal.removeAttribute( 'open' );
+				modal.remove();
+			}
+		};
+
+		modal.addEventListener( 'os-modal-cancel', ( event ) => {
+			event.preventDefault();
+			close();
+			opts.onCancel();
+		} );
+
+		document.body.appendChild( modal );
+		modal.setAttribute( 'open', '' );
+
+		return {
+			body,
+			footer,
+			setMandatory: ( on ) => modal.toggleAttribute( 'mandatory', on ),
+			close,
+		};
+	}
+
+	const dialog = document.createElement( 'dialog' );
+	const heading = document.createElement( 'h2' );
+	let mandatory = false;
+
+	dialog.className = 'atme-modal';
+	heading.className = 'atme-modal__title';
+	heading.id = `atme-modal-${ Math.random().toString( 36 ).slice( 2, 10 ) }`;
+	heading.textContent = opts.title;
+	dialog.setAttribute( 'aria-labelledby', heading.id );
+	footer.className = 'atme-modal__footer';
+	dialog.append( heading, body, footer );
+
+	const close = () => {
+		if ( ! closed ) {
+			closed = true;
+			dialog.close?.();
+			dialog.remove();
+		}
+	};
+
+	// Escape arrives as `cancel`; the backdrop as a click on the dialog itself.
+	dialog.addEventListener( 'cancel', ( event ) => {
+		event.preventDefault();
+
+		if ( ! mandatory ) {
+			close();
+			opts.onCancel();
+		}
+	} );
+	dialog.addEventListener( 'click', ( event ) => {
+		if ( event.target === dialog && ! mandatory ) {
+			close();
+			opts.onCancel();
+		}
+	} );
+
+	document.body.appendChild( dialog );
+
+	if ( typeof dialog.showModal === 'function' ) {
+		dialog.showModal();
+	} else {
+		dialog.setAttribute( 'open', '' );
+	}
+
+	return {
+		body,
+		footer,
+		setMandatory: ( on ) => {
+			mandatory = on;
+		},
+		close,
+	};
+}
+
+/**
+ * A determinate progress bar, `<os-progress-bar>` in the shell.
+ *
+ * @return The element, and a setter taking `value` of `max`.
+ */
+export function progressControl( label: string ): { el: HTMLElement; set: ( value: number, max: number ) => void } {
+	if ( registered( 'os-progress-bar' ) ) {
+		const bar = document.createElement( 'os-progress-bar' );
+
+		// Not `label`: that draws a caption row, and the caller already
+		// narrates progress in its own live region.
+		bar.setAttribute( 'aria-label', label );
+		bar.setAttribute( 'max', '100' );
+		bar.setAttribute( 'value', '0' );
+
+		return {
+			el: bar,
+			set: ( value, max ) => bar.setAttribute( 'value', String( max > 0 ? Math.round( ( value / max ) * 100 ) : 0 ) ),
+		};
+	}
+
+	const bar = document.createElement( 'progress' );
+
+	bar.className = 'atme-progress';
+	bar.max = 100;
+	bar.value = 0;
+	bar.setAttribute( 'aria-label', label );
+
+	return {
+		el: bar,
+		set: ( value, max ) => {
+			bar.value = max > 0 ? Math.round( ( value / max ) * 100 ) : 0;
+		},
+	};
 }

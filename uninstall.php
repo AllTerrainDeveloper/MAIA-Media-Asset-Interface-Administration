@@ -58,7 +58,7 @@ if ( $atme_term_ids ) {
 }
 
 // Our meta rows, wherever they landed.
-$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ( '_atme_versions', '_atme_converted_from', '_atme_conversions', '_atme_hash', '_atme_query' )" );
+$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ( '_atme_versions', '_atme_converted_from', '_atme_conversions', '_atme_hash', '_atme_previous_urls', '_atme_query' )" );
 // phpcs:enable
 
 delete_option( 'atme_wizard_state' );

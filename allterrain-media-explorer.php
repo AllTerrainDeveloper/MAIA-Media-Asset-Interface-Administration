@@ -88,6 +88,9 @@ define( 'ATME_META_CONVERTED_FROM', '_atme_converted_from' );
 define( 'ATME_META_CONVERSIONS', '_atme_conversions' );
 define( 'ATME_META_HASH', '_atme_hash' );
 
+/** Meta key on an attachment: the URLs it answered at before each replace. */
+define( 'ATME_META_PREVIOUS_URLS', '_atme_previous_urls' );
+
 /** Meta key on a collection holding its saved query as JSON. */
 define( 'ATME_META_QUERY', '_atme_query' );
 
@@ -100,6 +103,7 @@ require_once ATME_DIR . 'includes/helpers.php';
 require_once ATME_DIR . 'includes/convert.php';
 require_once ATME_DIR . 'includes/replace.php';
 require_once ATME_DIR . 'includes/usage.php';
+require_once ATME_DIR . 'includes/references.php';
 require_once ATME_DIR . 'includes/folders.php';
 require_once ATME_DIR . 'includes/wizard.php';
 require_once ATME_DIR . 'includes/rest.php';

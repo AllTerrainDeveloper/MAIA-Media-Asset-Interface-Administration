@@ -40,6 +40,7 @@ import { buttonControl, ensureComponents, selectControl, textControl } from './o
 import { libraryIdentity, setIdentity } from './relations';
 import { openViewer } from './view-open';
 import { createNameForm, type NameForm } from './name-form';
+import { offerReferenceUpdate, type ConversionPair, type ReferenceUpdate } from './reference-update';
 
 export type Teardown = () => void;
 
@@ -108,6 +109,7 @@ class ExplorerApp {
 	private openItemId = 0;
 	private collections: Collection[] = [];
 	private quickLook: QuickLook | null = null;
+	private referenceUpdate: ReferenceUpdate | null = null;
 	private wizard: Wizard | null = null;
 	private wizardOpen = false;
 	private bulkBar: HTMLElement | null = null;
@@ -1385,24 +1387,31 @@ class ExplorerApp {
 	 * shared host runs out of memory mid-batch.
 	 */
 	private async bulkConvert( ids: number[], format: string ): Promise< void > {
-		let done = 0;
+		const pairs: ConversionPair[] = [];
 		let failed = 0;
 
 		for ( const id of ids ) {
-			this.paintStatus( `Converting ${ done + failed + 1 }/${ ids.length } to ${ format.toUpperCase() }…` );
+			this.paintStatus( `Converting ${ pairs.length + failed + 1 }/${ ids.length } to ${ format.toUpperCase() }…` );
 
 			try {
-				await convertMedia( id, { format } );
-				done += 1;
+				const result = await convertMedia( id, { format } );
+				pairs.push( { from: id, to: result.id } );
 			} catch {
 				failed += 1;
 			}
 		}
 
+		if ( this.disposed ) {
+			return;
+		}
+
 		getShell()?.showToast?.( {
-			message: `Converted ${ done } of ${ ids.length }${ failed ? ` — ${ failed } failed` : '' }`,
+			message: `Converted ${ pairs.length } of ${ ids.length }${ failed ? ` — ${ failed } failed` : '' }`,
 		} );
 		void this.runQuery();
+
+		this.referenceUpdate?.destroy();
+		this.referenceUpdate = offerReferenceUpdate( { pairs, format } );
 	}
 
 	private async bulkDelete( ids: number[] ): Promise< void > {
@@ -1477,6 +1486,8 @@ class ExplorerApp {
 
 		this.quickLook?.destroy();
 		this.quickLook = null;
+		this.referenceUpdate?.destroy();
+		this.referenceUpdate = null;
 		this.wizard?.destroy();
 		this.wizard = null;
 		this.bulkBar?.remove();

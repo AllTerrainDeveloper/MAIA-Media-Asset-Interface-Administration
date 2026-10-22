@@ -140,6 +140,10 @@ function atme_replace( $attachment_id, $new_file, $args = array() ) {
 		return $stashed;
 	}
 
+	// Posts still name the outgoing URLs; once the metadata is rebuilt,
+	// nothing else remembers them for the update that follows.
+	atme_remember_previous_urls( $attachment_id );
+
 	// The old sub-sizes belong to the old pixels. Delete them before the
 	// metadata that names them is rebuilt, or they linger as orphans forever.
 	atme_delete_sub_sizes( $attachment_id );

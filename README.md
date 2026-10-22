@@ -68,8 +68,11 @@ a human decision; AI alt-text drafting requires a separate confirmation.
   host's Imagick/GD or supported browser fallbacks, including bundled AVIF WASM.
 - **HEIC intake:** convert iPhone photos to JPEG when the host's Imagick can read HEIC.
 - **Restorable versions:** replace an image while retaining its previous original.
-  Same-format replacements keep the URL. **Changing format changes the URL**;
-  existing embedded links may need updating.
+  Same-format replacements keep the URL. **Changing format changes the URL**,
+  so MAIA offers to update the posts that embed the old file.
+- **Post updates after converting:** confirm once and watch each affected post
+  update in a progress dialog — URLs for every size, the image ID for copies,
+  and featured images. Posts with revisions get one, so each change can be undone.
 - **Usage information:** see detected references in posts and settings before
   deleting an image. Plugins can report additional usage through hooks.
 - **Desktop drag and drop:** move media into compatible OpenStation targets,
