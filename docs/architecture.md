@@ -51,6 +51,7 @@ trip:
 | `POST /atme/v1/replace/{id}` | Swap the file (multipart `file`), keep ID; same-format replacements keep URL |
 | `GET/POST /atme/v1/versions/{id}` | History; roll back |
 | `GET /atme/v1/usage/{id}` | Every place the file is used |
+| `GET/POST /atme/v1/references` | Posts to move to a converted file (`from`, `to`); move one (`post`) |
 | `GET /atme/v1/facts/{id}` | Bytes, dimensions, provenance, version count |
 | `POST /atme/v1/regenerate` | Rebuild sub-sizes |
 | `GET/POST /atme/v1/folders` + `/file` + `/unfile` | The tree; filing |
@@ -96,8 +97,40 @@ original under `uploads/atme-versions/` (capped, pruned oldest-first), and
 rollback goes *through* replace, so undo has an undo. Version basenames travel to the client; absolute server paths do not.
 Rollback validates the requested basename against the stored history. Stashes
 use unique names even for replacements within the same second. A format
-change also changes the file extension and URL; embedded old URLs are not
-rewritten automatically.
+change also changes the file extension and URL; the posts that embedded the
+old URL are offered an update, below.
+
+## Updating posts after a conversion
+
+Converting changes a URL either way: a copy is a new attachment, and an
+in-place conversion keeps the ID but swaps the extension. After either — and
+after a format-changing replace — the client asks
+`GET /atme/v1/references?from=&to=` (`to` equals `from` in place) which posts
+still point at the old file. That list is the usage scan narrowed to posts the
+user can edit, then to posts a **dry run** of the rewrite would actually
+change: a featured image survives an in-place conversion because it stores an
+ID, so it is never offered. When the list is empty, no prompt appears.
+
+Otherwise an OpenStation modal lists the posts and changes nothing until the
+user confirms. Then it calls `POST /atme/v1/references` once per post, in
+sequence, and each row moves from waiting to updated, already up to date, or
+failed with the server's message. Stop finishes the post in flight and skips
+the rest; failures can be retried on their own. Closing the window abandons
+the run and ignores answers still in flight.
+
+The rewrite maps old URLs to new ones size by size (`full`, `original`, each
+sub-size; a size the new file lacks falls back to `full`). For a copy it also
+moves the ID wherever core's markup stores it — `wp-image-{id}`, block
+attributes `id` / `mediaId` / `ids`, `data-id`, `[gallery ids=""]` — and the
+featured image. Content is saved through `wp_update_post()`, so post types
+with revisions get one and the same kses as a manual save applies.
+
+In-place conversions have no source attachment left to read old URLs from,
+so `atme_replace()` records the outgoing URL map in `_atme_previous_urls`
+before every swap (last 10 kept). An update rewrites all of them to the
+current file, which also covers two conversions in a row with no update in
+between. Copies must carry `_atme_converted_from` naming the source; the
+routes refuse any other pair.
 
 ## Two App Framework windows
 

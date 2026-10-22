@@ -73,6 +73,18 @@ export interface UsageRow {
 	editUrl: string;
 }
 
+/** What moving one post to a converted file did. */
+export interface ReferenceUpdate {
+	postId: number;
+	title: string;
+	/** References rewritten in the content. */
+	replaced: number;
+	/** Whether the featured image moved to the copy. */
+	featured: boolean;
+	/** Whether anything was written at all. */
+	changed: boolean;
+}
+
 /** One stashed version. */
 export interface Version {
 	file: string;

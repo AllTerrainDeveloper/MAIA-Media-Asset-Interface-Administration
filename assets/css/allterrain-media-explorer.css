@@ -971,6 +971,150 @@
 	min-block-size: 0;
 }
 
+/* Post reference update dialog -------------------------------------------
+ *
+ * Opened after a conversion. Lives on `document.body` inside `<os-modal>`,
+ * whose dark surface re-points `--os-ui-fg` and friends for slotted content;
+ * the native `<dialog>` fallback paints its own surface from the same tokens.
+ */
+
+.atme-refupdate {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-inline-size: min( 440px, 80vw );
+	font-size: 13px;
+	color: var( --os-ui-fg, #1e1e1e );
+}
+
+.atme-refupdate__intro {
+	margin: 0;
+	line-height: 1.5;
+}
+
+.atme-refupdate__progress {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	inline-size: 100%;
+}
+
+.atme-refupdate__progress[hidden] {
+	display: none;
+}
+
+.atme-refupdate__progress > * {
+	inline-size: 100%;
+}
+
+.atme-refupdate__status {
+	min-block-size: 1.4em;
+	font-size: 12px;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-refupdate__list {
+	max-block-size: 280px;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+	border: 1px solid var( --os-ui-border, rgba( 0, 0, 0, 0.12 ) );
+	border-radius: 6px;
+}
+
+.atme-refupdate__row {
+	display: grid;
+	grid-template-columns: 20px minmax( 0, 1fr ) auto;
+	grid-template-areas:
+		"glyph name type"
+		"glyph detail detail";
+	column-gap: 8px;
+	align-items: center;
+	padding-block: 6px;
+	padding-inline: 10px;
+}
+
+.atme-refupdate__row + .atme-refupdate__row {
+	border-block-start: 1px solid var( --os-ui-border, rgba( 0, 0, 0, 0.08 ) );
+}
+
+.atme-refupdate__row[data-status="working"] {
+	background: var( --os-ui-accent-soft, rgba( 34, 113, 177, 0.08 ) );
+}
+
+.atme-refupdate__glyph {
+	grid-area: glyph;
+	display: flex;
+	justify-content: center;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-refupdate__row[data-status="done"] .atme-refupdate__glyph {
+	color: var( --os-ui-success, #00a32a );
+}
+
+.atme-refupdate__row[data-status="failed"] .atme-refupdate__glyph,
+.atme-refupdate__row[data-status="failed"] .atme-refupdate__detail {
+	color: var( --os-ui-danger, #d63638 );
+}
+
+.atme-refupdate__name {
+	grid-area: name;
+	overflow: hidden;
+	font-weight: 500;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.atme-refupdate__type {
+	grid-area: type;
+	font-size: 11px;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-refupdate__detail {
+	grid-area: detail;
+	font-size: 12px;
+	color: var( --os-ui-fg-muted, #666 );
+}
+
+.atme-modal__footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+/* The fallback, outside the shell. */
+.atme-modal {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-inline-size: min( 560px, calc( 100vw - 32px ) );
+	padding: 20px;
+	color: var( --os-ui-fg, #1e1e1e );
+	background: var( --os-window-bg, #fff );
+	border: 1px solid var( --os-ui-border, rgba( 0, 0, 0, 0.12 ) );
+	border-radius: 8px;
+}
+
+.atme-modal:not( [open] ) {
+	display: none;
+}
+
+.atme-modal::backdrop {
+	background: rgba( 0, 0, 0, 0.45 );
+}
+
+.atme-modal__title {
+	margin: 0;
+	font-size: 15px;
+}
+
+.atme-progress {
+	inline-size: 100%;
+}
+
 /* Phone ------------------------------------------------------------------
  *
  * The shell stamps `html[data-os-mode="mobile"]` and rewrites it live, so the

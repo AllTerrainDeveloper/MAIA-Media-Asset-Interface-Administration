@@ -80,6 +80,7 @@ anywhere on the window and upload into the current folder.
 | Topic | Payload | Meaning |
 |---|---|---|
 | `os.attachment.changed` | `{ source, action: 'created'\|'updated'\|'trashed', ids: number[] }` | An attachment changed somewhere. The grid patches those rows. Emitted after every mutation this plugin makes; also consumed from anyone else. |
+| `os.<post-type>.changed` | `{ source, action: 'updated', ids: [ postId ] }` | Emitted after a post was moved to a converted file, so an editor window showing it can reload. |
 | `atme.reveal` | `{ id: number }` | Ask an open explorer window to scroll to and inspect an item. |
 | `atme.wizard` | `{}` | Ask an open explorer window to open the Optimization Wizard. |
 | `atme.view` | `{ id: number }` | Ask the Media Viewer to show an item (retargets an open viewer; `openViewer()` also passes `params.mediaId` for cold opens). |

@@ -239,6 +239,19 @@
   function fetchUsage(id) {
     return request(`/usage/${id}`, {}, true);
   }
+  function fetchReferenceCandidates(from, to) {
+    return request(`/references?from=${from}&to=${to}`, {}, true);
+  }
+  async function updatePostReferences(post, from, to, type = "") {
+    const result = await request("/references", {
+      method: "POST",
+      body: JSON.stringify({ post, from, to })
+    });
+    if (result.changed && type) {
+      getShell()?.broadcast?.(`os.${type}.changed`, { source: BROADCAST_SOURCE, action: "updated", ids: [post] });
+    }
+    return result;
+  }
   function fetchFacts(id) {
     return request(`/facts/${id}`, {}, true);
   }
@@ -474,6 +487,7 @@
     "os-checkbox-label",
     "os-range-field",
     "os-notice",
+    "os-modal",
     "os-empty-state",
     "os-progress-bar",
     "os-steps",
@@ -718,6 +732,107 @@
     notice.className = "atme-inspector__hint";
     notice.textContent = message;
     return notice;
+  }
+  function modalControl(opts) {
+    const body = document.createElement("div");
+    const footer = document.createElement("div");
+    let closed = false;
+    body.className = opts.className ?? "";
+    if (registered("os-modal")) {
+      const modal = document.createElement("os-modal");
+      modal.setAttribute("title", opts.title);
+      modal.setAttribute("size", opts.size ?? "md");
+      footer.setAttribute("slot", "footer");
+      footer.className = "atme-modal__footer";
+      modal.append(body, footer);
+      const close2 = () => {
+        if (!closed) {
+          closed = true;
+          modal.removeAttribute("open");
+          modal.remove();
+        }
+      };
+      modal.addEventListener("os-modal-cancel", (event) => {
+        event.preventDefault();
+        close2();
+        opts.onCancel();
+      });
+      document.body.appendChild(modal);
+      modal.setAttribute("open", "");
+      return {
+        body,
+        footer,
+        setMandatory: (on) => modal.toggleAttribute("mandatory", on),
+        close: close2
+      };
+    }
+    const dialog = document.createElement("dialog");
+    const heading = document.createElement("h2");
+    let mandatory = false;
+    dialog.className = "atme-modal";
+    heading.className = "atme-modal__title";
+    heading.id = `atme-modal-${Math.random().toString(36).slice(2, 10)}`;
+    heading.textContent = opts.title;
+    dialog.setAttribute("aria-labelledby", heading.id);
+    footer.className = "atme-modal__footer";
+    dialog.append(heading, body, footer);
+    const close = () => {
+      if (!closed) {
+        closed = true;
+        dialog.close?.();
+        dialog.remove();
+      }
+    };
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      if (!mandatory) {
+        close();
+        opts.onCancel();
+      }
+    });
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog && !mandatory) {
+        close();
+        opts.onCancel();
+      }
+    });
+    document.body.appendChild(dialog);
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
+    return {
+      body,
+      footer,
+      setMandatory: (on) => {
+        mandatory = on;
+      },
+      close
+    };
+  }
+  function progressControl(label) {
+    if (registered("os-progress-bar")) {
+      const bar2 = document.createElement("os-progress-bar");
+      bar2.setAttribute("aria-label", label);
+      bar2.setAttribute("max", "100");
+      bar2.setAttribute("value", "0");
+      return {
+        el: bar2,
+        set: (value, max) => bar2.setAttribute("value", String(max > 0 ? Math.round(value / max * 100) : 0))
+      };
+    }
+    const bar = document.createElement("progress");
+    bar.className = "atme-progress";
+    bar.max = 100;
+    bar.value = 0;
+    bar.setAttribute("aria-label", label);
+    return {
+      el: bar,
+      set: (value, max) => {
+        bar.value = max > 0 ? Math.round(value / max * 100) : 0;
+      }
+    };
   }
   function setFindingsBadge(count) {
     const shell = getShell();
@@ -3186,6 +3301,255 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     }
     return { camera, exposure: parts.join(" · "), taken };
   }
+  const GLYPHS = {
+    pending: "○",
+    working: "…",
+    done: "✓",
+    unchanged: "–",
+    failed: "!",
+    skipped: "–"
+  };
+  const FORMAT_NAMES = { jpeg: "JPEG", png: "PNG", webp: "WebP", avif: "AVIF", gif: "GIF" };
+  const plural = (count, one, many = `${one}s`) => `${count} ${count === 1 ? one : many}`;
+  async function collectJobs(pairs) {
+    const lookups = await Promise.all(
+      pairs.map(
+        (pair) => fetchReferenceCandidates(pair.from, pair.to).then((rows) => ({ pair, rows })).catch(() => ({ pair, rows: [] }))
+      )
+    );
+    const jobs = /* @__PURE__ */ new Map();
+    for (const { pair, rows } of lookups) {
+      for (const row of rows) {
+        if (row.postId <= 0) {
+          continue;
+        }
+        const job = jobs.get(row.postId) ?? {
+          postId: row.postId,
+          title: row.title || `#${row.postId}`,
+          type: row.type,
+          typeLabel: row.typeLabel,
+          pairs: [],
+          status: "pending",
+          detail: "Waiting"
+        };
+        job.pairs.push(pair);
+        jobs.set(row.postId, job);
+      }
+    }
+    return [...jobs.values()];
+  }
+  function offerReferenceUpdate(opts) {
+    let disposed = false;
+    let modal = null;
+    const handle = {
+      destroy: () => {
+        disposed = true;
+        modal?.close();
+        modal = null;
+      }
+    };
+    if (opts.pairs.length === 0) {
+      return handle;
+    }
+    const open = (jobs) => {
+      const format = FORMAT_NAMES[opts.format] ?? opts.format.toUpperCase();
+      let stopping = false;
+      let wrote = false;
+      modal = modalControl({
+        title: `Use the ${format} in your posts?`,
+        className: "atme-refupdate",
+        onCancel: () => {
+          modal = null;
+          disposed = true;
+        }
+      });
+      const { body, footer } = modal;
+      const intro = document.createElement("p");
+      intro.className = "atme-refupdate__intro";
+      intro.textContent = (opts.pairs.length === 1 ? `This image is used in ${plural(jobs.length, "post")}, which still point at the old file. ` : `These images are used in ${plural(jobs.length, "post")}, which still point at the old files. `) + `Update ${jobs.length === 1 ? "it" : "them"} to the new ${format}? Posts that keep revisions get a new one, so each change can be undone.`;
+      body.appendChild(intro);
+      const progress = progressControl("Posts updated");
+      const progressWrap = document.createElement("div");
+      const live = document.createElement("div");
+      progressWrap.className = "atme-refupdate__progress";
+      progressWrap.hidden = true;
+      progressWrap.appendChild(progress.el);
+      body.appendChild(progressWrap);
+      live.className = "atme-refupdate__status";
+      live.setAttribute("role", "status");
+      live.setAttribute("aria-live", "polite");
+      progressWrap.appendChild(live);
+      const list = document.createElement("ul");
+      list.className = "atme-refupdate__list";
+      body.appendChild(list);
+      const paintRow = (job) => {
+        const row = job.row ?? document.createElement("li");
+        job.row = row;
+        row.className = "atme-refupdate__row";
+        row.dataset.status = job.status;
+        row.textContent = "";
+        const glyph = document.createElement("span");
+        glyph.className = "atme-refupdate__glyph";
+        glyph.setAttribute("aria-hidden", "true");
+        if ("working" === job.status && registered("os-spinner")) {
+          const spinner = document.createElement("os-spinner");
+          spinner.setAttribute("size", "small");
+          glyph.appendChild(spinner);
+        } else {
+          glyph.textContent = GLYPHS[job.status];
+        }
+        const name = document.createElement("span");
+        name.className = "atme-refupdate__name";
+        name.textContent = job.title;
+        const type = document.createElement("span");
+        type.className = "atme-refupdate__type";
+        type.textContent = job.typeLabel;
+        const detail = document.createElement("span");
+        detail.className = "atme-refupdate__detail";
+        detail.textContent = job.detail;
+        row.append(glyph, name, type, detail);
+        return row;
+      };
+      for (const job of jobs) {
+        list.appendChild(paintRow(job));
+      }
+      const paintFooter = (phase) => {
+        footer.textContent = "";
+        if ("offer" === phase) {
+          footer.append(
+            buttonControl({
+              label: "Not now",
+              className: "atme-button",
+              onClick: () => handle.destroy()
+            }),
+            buttonControl({
+              label: `Update ${plural(jobs.length, "post")}`,
+              variant: "primary",
+              className: "atme-button atme-button--primary",
+              onClick: () => void run(jobs)
+            })
+          );
+          return;
+        }
+        if ("running" === phase) {
+          const stop = buttonControl({
+            label: "Stop",
+            className: "atme-button",
+            onClick: () => {
+              stopping = true;
+              stop.textContent = "Stopping…";
+              stop.setAttribute("disabled", "");
+            }
+          });
+          footer.appendChild(stop);
+          return;
+        }
+        const failed = jobs.filter((job) => "failed" === job.status);
+        if (failed.length > 0) {
+          footer.appendChild(
+            buttonControl({
+              label: `Retry ${plural(failed.length, "failed post")}`,
+              className: "atme-button",
+              onClick: () => void run(failed)
+            })
+          );
+        }
+        footer.appendChild(
+          buttonControl({
+            label: "Done",
+            variant: "primary",
+            className: "atme-button atme-button--primary",
+            onClick: () => handle.destroy()
+          })
+        );
+      };
+      const summarize = () => {
+        const count = (status) => jobs.filter((job) => status === job.status).length;
+        const parts = [`${plural(count("done"), "post")} updated`];
+        if (count("unchanged")) {
+          parts.push(`${count("unchanged")} already up to date`);
+        }
+        if (count("failed")) {
+          parts.push(`${count("failed")} failed`);
+        }
+        if (count("skipped")) {
+          parts.push(`${count("skipped")} skipped`);
+        }
+        return parts.join(" · ");
+      };
+      const run = async (queue) => {
+        stopping = false;
+        intro.hidden = true;
+        progressWrap.hidden = false;
+        modal?.setMandatory(true);
+        paintFooter("running");
+        for (const job of queue) {
+          job.status = "pending";
+          job.detail = "Waiting";
+          paintRow(job);
+        }
+        for (const [index, job] of queue.entries()) {
+          if (disposed) {
+            return;
+          }
+          if (stopping) {
+            job.status = "skipped";
+            job.detail = "Skipped";
+            paintRow(job);
+            continue;
+          }
+          progress.set(index, queue.length);
+          live.textContent = `Updating ${index + 1} of ${queue.length}: ${job.title}`;
+          job.status = "working";
+          job.detail = "Updating…";
+          paintRow(job).scrollIntoView?.({ block: "nearest" });
+          let replaced = 0;
+          let featured = false;
+          let changed = false;
+          try {
+            for (const pair of job.pairs) {
+              const result = await updatePostReferences(job.postId, pair.from, pair.to, job.type);
+              if (disposed) {
+                return;
+              }
+              replaced += result.replaced;
+              featured = featured || result.featured;
+              changed = changed || result.changed;
+            }
+            wrote = wrote || changed;
+            job.status = changed ? "done" : "unchanged";
+            job.detail = changed ? [replaced > 0 ? `${plural(replaced, "link")} updated` : "", featured ? "featured image" : ""].filter(Boolean).join(" · ") || "Updated" : "Already up to date";
+          } catch (error) {
+            if (disposed) {
+              return;
+            }
+            job.status = "failed";
+            job.detail = error instanceof Error ? error.message : "Could not be updated";
+          }
+          paintRow(job);
+        }
+        progress.set(queue.length, queue.length);
+        live.textContent = summarize();
+        modal?.setMandatory(false);
+        paintFooter("finished");
+        if (wrote) {
+          opts.onFinished?.();
+        }
+      };
+      paintFooter("offer");
+    };
+    void (async () => {
+      const jobs = await collectJobs(opts.pairs);
+      if (disposed || jobs.length === 0) {
+        return;
+      }
+      await ensureComponents(["os-modal", "os-button", "os-progress-bar", "os-spinner"]);
+      if (!disposed) {
+        open(jobs);
+      }
+    })();
+    return handle;
+  }
   function formatBytes(bytes) {
     if (bytes <= 0) {
       return "—";
@@ -3202,6 +3566,16 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
   function mountInspector(host, delegate) {
     let current = null;
     let epoch = 0;
+    let referenceUpdate = null;
+    let refreshUsage = null;
+    const offerReferences = (pair, format) => {
+      referenceUpdate?.destroy();
+      referenceUpdate = offerReferenceUpdate({
+        pairs: [pair],
+        format,
+        onFinished: () => refreshUsage?.()
+      });
+    };
     host.classList.add("atme-inspector");
     const render = (item) => {
       const thisEpoch = ++epoch;
@@ -3398,9 +3772,9 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       );
       host.appendChild(actions);
       if (item.kind === "image") {
-        host.appendChild(buildConvertSection(item, delegate));
+        host.appendChild(buildConvertSection(item, delegate, offerReferences));
         host.appendChild(buildDownloadAsSection(item));
-        host.appendChild(buildReplaceSection(item, delegate));
+        host.appendChild(buildReplaceSection(item, delegate, offerReferences));
       }
       const usageSection = document.createElement("div");
       usageSection.className = "atme-inspector__section";
@@ -3412,14 +3786,18 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       usageBody.textContent = "Looking…";
       usageSection.appendChild(usageBody);
       host.appendChild(usageSection);
-      void fetchUsage(item.id).then((rows) => {
+      const loadUsage = () => void fetchUsage(item.id).then((rows) => {
         if (epoch !== thisEpoch) {
           return;
         }
         paintUsage(usageBody, rows);
       }).catch(() => {
-        usageBody.textContent = "Could not be determined.";
+        if (epoch === thisEpoch) {
+          usageBody.textContent = "Could not be determined.";
+        }
       });
+      loadUsage();
+      refreshUsage = loadUsage;
       const versionsSection = document.createElement("div");
       versionsSection.className = "atme-inspector__section";
       const versionsTitle = document.createElement("h3");
@@ -3513,10 +3891,13 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
         epoch += 1;
         host.textContent = "";
         current = null;
+        refreshUsage = null;
+        referenceUpdate?.destroy();
+        referenceUpdate = null;
       }
     };
   }
-  function buildConvertSection(item, delegate) {
+  function buildConvertSection(item, delegate, onConverted) {
     const section = document.createElement("div");
     section.className = "atme-inspector__section";
     const title = document.createElement("h3");
@@ -3581,8 +3962,9 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     });
     const run = () => {
       go.setAttribute("disabled", "");
+      const format = state.format;
       void convertMedia(item.id, {
-        format: state.format,
+        format,
         quality: state.quality,
         strip_meta: state.stripMeta,
         replace: state.replace
@@ -3592,6 +3974,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
           message: result.replaced ? `Converted in place${saved > 0 ? ` — ${formatBytes(saved)} saved` : ""}` : "Converted copy created"
         });
         delegate.onChanged(item);
+        onConverted({ from: item.id, to: result.id }, format);
       }).catch((error) => {
         getShell()?.notify?.({ title: "Conversion failed", body: error.message, type: "error" });
       }).finally(() => {
@@ -3601,14 +3984,14 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
     section.appendChild(go);
     return section;
   }
-  function buildReplaceSection(item, delegate) {
+  function buildReplaceSection(item, delegate, onReplaced) {
     const section = document.createElement("div");
     section.className = "atme-inspector__section";
     const title = document.createElement("h3");
     title.textContent = "Replace file";
     section.appendChild(title);
     section.appendChild(
-      noticeEl("The old file becomes a version. Same-format replacements keep the URL. Changing format changes the URL; existing embedded links may need updating.")
+      noticeEl("The old file becomes a version. Same-format replacements keep the URL. Changing format changes the URL, and you will be offered to update the posts that use it.")
     );
     const picker = document.createElement("input");
     picker.type = "file";
@@ -3627,6 +4010,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       void replaceMedia(item.id, file).then(() => {
         getShell()?.showToast?.({ message: "File replaced" });
         delegate.onChanged(item);
+        onReplaced({ from: item.id, to: item.id }, file.type.replace(/^image\//, "") || "new file");
       }).catch((error) => {
         getShell()?.notify?.({ title: "Replace failed", body: error.message, type: "error" });
       }).finally(() => {
@@ -4126,6 +4510,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       this.openItemId = 0;
       this.collections = [];
       this.quickLook = null;
+      this.referenceUpdate = null;
       this.wizard = null;
       this.wizardOpen = false;
       this.bulkBar = null;
@@ -5146,21 +5531,26 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
      * shared host runs out of memory mid-batch.
      */
     async bulkConvert(ids, format) {
-      let done = 0;
+      const pairs = [];
       let failed = 0;
       for (const id of ids) {
-        this.paintStatus(`Converting ${done + failed + 1}/${ids.length} to ${format.toUpperCase()}…`);
+        this.paintStatus(`Converting ${pairs.length + failed + 1}/${ids.length} to ${format.toUpperCase()}…`);
         try {
-          await convertMedia(id, { format });
-          done += 1;
+          const result = await convertMedia(id, { format });
+          pairs.push({ from: id, to: result.id });
         } catch {
           failed += 1;
         }
       }
+      if (this.disposed) {
+        return;
+      }
       getShell()?.showToast?.({
-        message: `Converted ${done} of ${ids.length}${failed ? ` — ${failed} failed` : ""}`
+        message: `Converted ${pairs.length} of ${ids.length}${failed ? ` — ${failed} failed` : ""}`
       });
       void this.runQuery();
+      this.referenceUpdate?.destroy();
+      this.referenceUpdate = offerReferenceUpdate({ pairs, format });
     }
     async bulkDelete(ids) {
       const shell = getShell();
@@ -5215,6 +5605,8 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e2.byteLength}`), e2.tif
       }
       this.quickLook?.destroy();
       this.quickLook = null;
+      this.referenceUpdate?.destroy();
+      this.referenceUpdate = null;
       this.wizard?.destroy();
       this.wizard = null;
       this.bulkBar?.remove();
